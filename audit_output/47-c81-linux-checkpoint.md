@@ -1,6 +1,6 @@
 # C8.1 Linux checkpoint
 
-Date: 2026-09-07 UTC  
+Date: 2026-09-07 UTC
 Gate C8.1-G0: **APPROVED WITH RESERVATIONS**
 
 ## Git baseline
