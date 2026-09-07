@@ -1,6 +1,6 @@
 """Checksum-bound backup and restore for authenticated synthetic vaults."""
 from __future__ import annotations
-import hashlib,json
+import hashlib,json,secrets
 from pathlib import Path
 from transport.artifacts import read,write
 from storage.authenticated import SCHEMA,open_sealed
@@ -11,6 +11,7 @@ class BackupError(ValueError): pass
 def _digest(payload): return hashlib.sha256(json.dumps(payload,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()).hexdigest()
 
 def _within(root: Path,authorized_root: Path):
+    if root.is_symlink(): raise BackupError("symlink root rejected")
     resolved=root.resolve(); authorized=authorized_root.resolve()
     try: resolved.relative_to(authorized)
     except ValueError as exc: raise BackupError("path outside authorized root") from exc
@@ -27,6 +28,6 @@ def restore_backup(backup_root: Path,backup_name: str,destination_root: Path,des
     backup=read(backup_root,backup_name,expected_schema=BACKUP_SCHEMA)
     if set(backup)!={"schema","version","vaultSchema","vaultSha256","vaultPayload"} or backup["version"]!=1 or backup["vaultSchema"]!=SCHEMA: raise BackupError("unsupported backup")
     vault=backup["vaultPayload"]
-    if _digest(vault)!=backup["vaultSha256"]: raise BackupError("backup checksum mismatch")
+    if not isinstance(backup["vaultSha256"],str) or not secrets.compare_digest(_digest(vault),backup["vaultSha256"]): raise BackupError("backup checksum mismatch")
     open_sealed(vault,password)
     return write(destination_root,destination_name,vault)
