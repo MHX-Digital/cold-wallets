@@ -1,4 +1,4 @@
-import ast,unittest
+import ast,json,unittest
 from pathlib import Path
 
 def imports(path):
@@ -48,6 +48,27 @@ class ArchitectureTests(unittest.TestCase):
             "rpc/wireguard/client.conf.example","rpc/wireguard/wg0.conf.example",
         )
         self.assertEqual([name for name in forbidden if Path(name).exists()],[])
+
+    def test_rpc_placeholders_are_disabled_and_nonexecutable(self):
+        files={path for path in Path("rpc").rglob("*") if path.is_file()}
+        expected={Path("rpc/README.md"),Path("rpc/helios/attestation.example.json"),Path("rpc/tor/transport-policy.example.json")}
+        self.assertEqual(files,expected)
+        helios=json.loads(Path("rpc/helios/attestation.example.json").read_text(encoding="utf-8"))
+        self.assertEqual(helios["schema"],"cold-wallets.helios-attestation")
+        self.assertEqual(helios["state"],"HELIOS_UNATTESTED")
+        self.assertIs(helios["enabled"],False)
+        self.assertEqual(helios["bind"],"127.0.0.1")
+        self.assertIsNone(helios["imageDigest"]); self.assertIsNone(helios["binarySha256"])
+        self.assertIsNone(helios["checkpoint"]); self.assertIsNone(helios["upstream"])
+        self.assertEqual(len(helios["requiredEvidence"]),8)
+        tor=json.loads(Path("rpc/tor/transport-policy.example.json").read_text(encoding="utf-8"))
+        self.assertEqual(tor["schema"],"cold-wallets.tor-transport-policy")
+        self.assertEqual(tor["state"],"TOR_UNATTESTED")
+        self.assertIs(tor["enabled"],False); self.assertIs(tor["autoStart"],False)
+        self.assertIs(tor["clearnetFallback"],False); self.assertIs(tor["hiddenService"],False)
+        self.assertEqual(tor["proxy"],"socks5h://127.0.0.1:9050")
+        self.assertEqual(tor["bind"],"127.0.0.1")
+        self.assertIsNone(tor["binarySha256"]); self.assertIsNone(tor["configSha256"])
 
     def test_only_reviewed_windows_scripts_remain(self):
         scripts={path for suffix in ("*.bat","*.cmd","*.ps1") for path in Path(".").rglob(suffix)}
