@@ -22,8 +22,9 @@ offline signer -> signed artifact -> online validator/broadcaster
   shipped in `embit` has not been independently reproduced or approved.
 - P2PKH, wrapped SegWit, Taproot, multisig, PSBT v2, arbitrary scripts,
   alternate sighashes, change outputs, and production testnet are unsupported.
-- Legacy combined generation/sign/send scripts are unsafe and pending physical
-  removal where repository permissions currently prevent editing them.
+- Legacy combined key-generation/sign/send implementations were removed. A
+  protected historical RPC configuration subtree remains outside the supported
+  product until its directory ownership is corrected and its files are deleted.
 
 ## Start the watch-only Dashboard
 
@@ -90,8 +91,10 @@ backup/recovery procedures.
 
 `storage/authenticated.py` defines a versioned scrypt + AES-256-GCM format and
 `storage/backup.py` provides checksum-bound, atomic restore into an authorized
-root. They are currently approved only for synthetic fixtures. If the reviewed
-PyCryptodome backend is unavailable they fail closed; no custom cipher fallback
-exists.
+root. Round-trip, tamper, wrong-password, downgrade and synthetic restore tests
+are executed only in the hash-locked environment. This validates the format for
+fixtures; it does not approve migration of real keys. If the reviewed
+PyCryptodome backend is unavailable, storage fails closed with no custom cipher
+fallback.
 
 Detailed evidence and remaining blockers are under `audit_output/`.

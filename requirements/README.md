@@ -9,7 +9,7 @@ python -m pip install --require-hashes -r requirements/runtime-py312-linux.lock
 
 The PSBT package is distributed only as an sdist. Install its build tools from
 `build-py312.lock`, verify the sdist SHA-256 in `psbt-py312-linux.lock`, and do
-not enable Bitcoin signing unless `signer.psbt_backend` reports an approved
+not enable Bitcoin signing unless `bitcoin_backend` reports an approved
 backend.
 
 Windows x86-64 locks for CPython 3.10, 3.12, and 3.14 are intentionally absent.
