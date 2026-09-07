@@ -19,9 +19,13 @@ class EthAccountBackend:
             raise SigningError("reviewed eth-account dependency is unavailable") from exc
         return Account
     def address_for_key(self,key: str)->str:
-        return self._account().from_key(key).address
+        try: return self._account().from_key(key).address
+        except SigningError: raise
+        except Exception as exc: raise SigningError("invalid local signing key") from exc
     def sign_type2(self,transaction: dict,key: str)->tuple[str,str,str]:
-        account=self._account(); signed=account.sign_transaction(transaction,key)
+        account=self._account()
+        try: signed=account.sign_transaction(transaction,key)
+        except Exception as exc: raise SigningError("transaction signing failed") from exc
         raw_bytes=getattr(signed,"raw_transaction",getattr(signed,"rawTransaction",None))
         if raw_bytes is None: raise SigningError("signing backend returned no transaction")
         raw="0x"+bytes(raw_bytes).hex()

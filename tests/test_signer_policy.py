@@ -1,4 +1,4 @@
-import ast, unittest
+import ast, socket, unittest
 from pathlib import Path
 from coordinator.eth_envelope import proposal_id
 from signer.ethereum import EthAccountBackend, SigningError, SigningPolicy, independent_summary, sign
@@ -33,5 +33,23 @@ class SignerTests(unittest.TestCase):
 
     def test_missing_crypto_dependency_fails_closed(self):
         with self.assertRaises(SigningError): EthAccountBackend().address_for_key("ephemeral-not-a-key")
+
+    def test_real_type2_signature_and_recovery_when_dependency_available(self):
+        try:
+            from eth_account import Account
+            from eth_utils import keccak
+        except ImportError:
+            self.skipTest("hashed eth-account environment required")
+        key="0x"+"00"*31+"01"  # public secp256k1 test scalar, never funded here
+        expected="0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf"
+        e=envelope(); e["from"]=expected; e["proposalId"]=proposal_id(e)
+        original=socket.socket
+        def blocked(*_a,**_k): raise AssertionError("offline signer attempted network")
+        socket.socket=blocked
+        try: out=sign(e,key,confirmation=e["proposalId"],backend=EthAccountBackend(),now=2)
+        finally: socket.socket=original
+        self.assertEqual(Account.recover_transaction(out["rawTransaction"]),expected)
+        self.assertEqual(out["transactionHash"],"0x"+keccak(bytes.fromhex(out["rawTransaction"][2:])).hex())
+        self.assertNotIn(key,repr(out))
 
 if __name__=="__main__": unittest.main()
