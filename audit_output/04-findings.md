@@ -80,3 +80,30 @@ Todos os demais findings permanecem abertos. “Contido” não equivale a corre
 | CW-020 | open | OPEN | backup/recovery pendente |
 | CW-021 | open | ACCEPTED TEMPORARILY | bind IPv4 loopback documentado |
 | CW-022 | informational | VERIFIED | gates e commits isolados; sem interferência C4 |
+
+## Estado C5
+
+| ID | Estado C4 | Estado C5 | Evidência |
+|---|---|---|---|
+| CW-001 | VERIFIED | VERIFIED | fronteira Dashboard preservada |
+| CW-002 | VERIFIED no Dashboard | VERIFIED no Dashboard | regressão HTTP |
+| CW-003 | VERIFIED | VERIFIED | vetores de endereço |
+| CW-004 | OPEN | PARTIAL | PSBT v0 P2WPKH com prevout completo; escopo amplo pendente |
+| CW-005 | PARTIAL | VERIFIED no signer | assinatura type 2/recovery/custos reais; verdade RPC permanece separada |
+| CW-006 | PARTIAL | PARTIAL | locks Python verificados; Tor binário ainda sem manifest oficial |
+| CW-007 | PARTIAL | PARTIAL | NO-GO e limites preservados |
+| CW-008 | VERIFIED no Dashboard | VERIFIED no Dashboard | regressão UI/API |
+| CW-009 | OPEN | PARTIAL | fee PSBT recalculada e limitada para P2WPKH |
+| CW-010 | PARTIAL | VERIFIED no signer | somente type 2; legado online ainda deprecado |
+| CW-011 | PARTIAL | PARTIAL | detector metadata-only; destino autenticado pendente |
+| CW-012 | PARTIAL | PARTIAL | socket bloqueado em teste; validação host pendente |
+| CW-013 | OPEN | VERIFIED na camada nova | SQLite, estados, reserva concorrente, expiração e histórico |
+| CW-014 | VERIFIED na camada nova | VERIFIED | estado incerto/reconciliação/already-known adicionados |
+| CW-015 | PARTIAL | PARTIAL | exceções de chave redigidas; redactor global pendente |
+| CW-016 | PARTIAL | PARTIAL | Helios sem attestation |
+| CW-017 | PARTIAL | VERIFIED para clientes Python inventariados | AST: requests só no adapter; scripts Batch/PS continuam pendentes |
+| CW-018 | VERIFIED | VERIFIED | regressão web |
+| CW-019 | PARTIAL | VERIFIED para CPython 3.12/Linux | runtime/build locks instalados offline com hashes |
+| CW-020 | OPEN | OPEN | backup/recovery real pendente |
+| CW-021 | ACCEPTED TEMPORARILY | ACCEPTED TEMPORARILY | bind IPv4 loopback |
+| CW-022 | VERIFIED | VERIFIED | Gate C5 estável |

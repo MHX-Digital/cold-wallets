@@ -32,10 +32,20 @@ The dashboard cannot generate/import keys, sign, broadcast, launch Tor or execut
 - Provisioning must be manual from reviewed, pinned artifacts
 - **Docker Desktop** — optional, for Helios light client
 
-The launcher does not install dependencies. The requirements file is not yet hash-locked:
+The launcher does not install dependencies. Legacy package names were:
 ```
 eth-account  bit  requests[socks]  PySocks
 ```
+
+For the validated CPython 3.12/Linux environment, install explicitly inside a virtualenv:
+
+```text
+python -m pip install --require-hashes -r requirements/runtime-py312-linux.lock
+python -m pip install --require-hashes -r requirements/build-py312.lock
+python -m pip install --require-hashes --no-build-isolation -r requirements/psbt-py312-linux.lock
+```
+
+These locks are platform-specific. Do not use them as evidence for Windows or another Python version. Managed Python memory cannot guarantee private-key zeroization; use a dedicated offline process and terminate it after signing.
 
 ## Project Structure
 

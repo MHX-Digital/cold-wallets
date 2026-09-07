@@ -53,3 +53,7 @@ Cada execução terá `run-id`, raiz sob `/tmp/cold-wallets-test-<run-id>`, mani
 ## Pendências após C4
 
 P0: instalar somente após aprovação a dependência Ethereum pinada e executar vetores reais; selecionar e pinnear biblioteca PSBT. P1: migrar clientes legados ao adapter Tor e integrar broadcaster remoto simulado completo. P2: lockfile com hashes, storage legado e estado descartável. P3: validação operacional Windows/air-gap e recuperação.
+
+## Pendências após C5
+
+P0: ampliar PSBT para vetores oficiais, P2PKH/P2SH-P2WPKH e validação independente. P1: broadcaster Ethereum, scripts Batch/PowerShell Tor e attestation Helios. P2: integrar stores novos, formato autenticado de migração e locks Windows/Python adicionais. P3: testes operacionais air-gap/backup.
