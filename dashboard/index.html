@@ -2,18 +2,35 @@
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="session-token" content="__SESSION_TOKEN__">
-<title>Cold Wallets — Online Coordinator</title>
-<style>body{max-width:760px;margin:3rem auto;padding:1rem;background:#0a0e14;color:#e2e8f0;font:16px system-ui}section{border:1px solid #334155;border-radius:10px;padding:1rem;margin:1rem 0}.tag{display:inline-block;border:1px solid #f59e0b;padding:.2rem .5rem;margin:.2rem}code{color:#93c5fd}.warning{color:#fbbf24}</style>
+<title>Cold Wallets — Watch-Only Coordinator</title>
+<style>body{max-width:900px;margin:2rem auto;padding:1rem;background:#0a0e14;color:#e2e8f0;font:16px system-ui}section{border:1px solid #475569;border-radius:10px;padding:1rem;margin:1rem 0}.tag{display:inline-block;border:1px solid #f59e0b;padding:.2rem .5rem;margin:.2rem}label{display:block;margin:.6rem 0}input{width:100%;max-width:44rem;padding:.45rem}button{padding:.55rem .8rem;margin:.3rem}.warning{color:#fbbf24}pre{white-space:pre-wrap;overflow-wrap:anywhere}.sr{position:absolute;left:-10000px}</style>
 </head><body>
 <h1>Online watch-only coordinator</h1>
-<p class="warning">This browser interface is not a cold wallet and cannot create, import, store, or use signing credentials.</p>
-<p><span class="tag">ONLINE</span><span class="tag">WATCH-ONLY</span><span class="tag">PUBLIC RPC — UNVERIFIED</span><span class="tag">REAL BROADCAST DISABLED</span></p>
-<section><h2>Safe workflow</h2><ol><li><strong>Prepare</strong> a proposal online.</li><li><strong>Review</strong> network, destination, value, maximum fee, proposal hash, and risk.</li><li><strong>Export</strong> the versioned artifact.</li><li><strong>Sign offline</strong> on a separate host after independent review.</li><li><strong>Import</strong> the signed artifact.</li><li><strong>Validate</strong> signature and proposal binding.</li><li><strong>Transmit</strong> only after the controlled-validation gate is enabled.</li><li><strong>Track</strong> the persistent broadcast state.</li></ol><p>Current next step: use the coordinator CLI/service contracts. The browser intentionally has no signing or live-transmit control.</p></section>
-<section><h2>Component status</h2><pre id="status">Loading…</pre></section>
+<p class="warning">This is not a cold wallet. Never enter a private key, mnemonic, seed, or WIF. Real broadcast is disabled.</p>
+<p><span class="tag">ONLINE</span><span class="tag">WATCH-ONLY</span><span class="tag">PUBLIC RPC — UNVERIFIED</span><span class="tag">REMOTE BROADCAST DISABLED</span></p>
+
+<section aria-labelledby="eth-title"><h2 id="eth-title">Ethereum: Prepare → Review → Export</h2>
+<form id="eth-form"><label>From address <input name="from" required pattern="0x[0-9a-fA-F]{40}"></label><label>Destination <input name="to" required pattern="0x[0-9a-fA-F]{40}"></label><label>Value (wei) <input name="valueWei" required inputmode="numeric"></label><label>Nonce <input name="nonce" required inputmode="numeric"></label><label>Gas limit <input name="gasLimit" value="21000" required inputmode="numeric"></label><label>Maximum fee per gas (wei) <input name="maxFeePerGasWei" required inputmode="numeric"></label><label>Priority fee per gas (wei) <input name="maxPriorityFeePerGasWei" required inputmode="numeric"></label><label><input name="confirm" type="checkbox" required style="width:auto"> I confirm Ethereum mainnet and the displayed destination/value/maximum cost.</label><button type="submit">Prepare proposal</button></form>
+<p>Maximum gas cost: <output id="gas-cost">—</output> wei; maximum total cost: <output id="total-cost">—</output> wei.</p>
+<button id="export" disabled>Export reviewed envelope</button><p>Proposal: <code id="proposal">none</code></p></section>
+
+<section aria-labelledby="offline-title"><h2 id="offline-title">Sign offline → Import → Validate</h2><p>Transfer the exported envelope to a separate offline signer. Return only the signed artifact.</p><label>Signed Ethereum artifact <input id="signed-file" type="file" accept=".cw-eth-signed,application/json"></label><button id="import" disabled>Import and validate</button><button id="register" disabled>Register locally</button><p id="signed-status">No signed artifact validated.</p></section>
+
+<section aria-labelledby="btc-title"><h2 id="btc-title">Bitcoin PSBT review</h2><p>Supported review scope: mainnet, PSBT v0, native P2WPKH, SIGHASH_ALL, send-all, one destination. Bitcoin signing remains blocked unless the backend is independently approved.</p><label>PSBT file <input id="psbt-file" type="file" accept=".psbt"></label><button disabled title="Coordinator PSBT API is not enabled in this cycle">Review PSBT (blocked)</button><pre id="btc-backend">Backend status loading…</pre></section>
+
+<section><h2>Operational status</h2><pre id="status" aria-live="polite">Loading…</pre></section>
 <script>
+'use strict';
 const token=document.querySelector('meta[name="session-token"]').content;
-fetch('/api/status',{method:'POST',headers:{'Content-Type':'application/json','X-Session-Token':token},body:'{}'})
- .then(r=>r.json()).then(v=>{document.getElementById('status').textContent=JSON.stringify(v,null,2)})
- .catch(()=>{document.getElementById('status').textContent='Status unavailable'});
-</script>
-</body></html>
+let proposalId=null;
+const request=async(path,body,key=crypto.randomUUID())=>{const response=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json','X-Session-Token':token,'Idempotency-Key':key},body:JSON.stringify(body)});const value=await response.json();if(!response.ok)throw new Error(value.error||'Request rejected');return value};
+const busy=async(button,action)=>{if(button.disabled)return;button.disabled=true;try{await action()}catch(_error){document.getElementById('signed-status').textContent='Operation rejected without exposing details.'}finally{button.disabled=false}};
+const form=document.getElementById('eth-form'),exportButton=document.getElementById('export'),importButton=document.getElementById('import'),registerButton=document.getElementById('register');
+form.addEventListener('input',()=>{try{const data=new FormData(form),gas=BigInt(data.get('gasLimit')||'0'),fee=BigInt(data.get('maxFeePerGasWei')||'0'),value=BigInt(data.get('valueWei')||'0');document.getElementById('gas-cost').textContent=String(gas*fee);document.getElementById('total-cost').textContent=String(value+gas*fee)}catch(_error){document.getElementById('gas-cost').textContent='invalid';document.getElementById('total-cost').textContent='invalid'}});
+form.addEventListener('submit',event=>{event.preventDefault();const button=form.querySelector('button');busy(button,async()=>{const data=Object.fromEntries(new FormData(form));delete data.confirm;Object.assign(data,{data:'0x',sources:[],confirmNetwork:'ethereum-mainnet'});const result=await request('/api/proposals/ethereum',data);proposalId=result.proposalId;document.getElementById('proposal').textContent=proposalId;exportButton.disabled=false})});
+exportButton.addEventListener('click',()=>busy(exportButton,async()=>{const artifact=await request('/api/artifacts/export',{proposalId});const blob=new Blob([JSON.stringify(artifact)],{type:'application/json'}),link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download='ethereum-proposal.cw-eth-proposal';link.click();URL.revokeObjectURL(link.href)}));
+document.getElementById('signed-file').addEventListener('change',event=>{importButton.disabled=!event.target.files.length});
+importButton.addEventListener('click',()=>busy(importButton,async()=>{const file=document.getElementById('signed-file').files[0],artifact=JSON.parse(await file.text());const result=await request('/api/artifacts/import',{artifact});proposalId=artifact.payload.proposalId;document.getElementById('signed-status').textContent=`Validated transaction ${result.transactionHash}`;registerButton.disabled=false}));
+registerButton.addEventListener('click',()=>busy(registerButton,async()=>{const result=await request('/api/broadcast/register',{proposalId});document.getElementById('signed-status').textContent=`Local state: ${result.state}; remote broadcast: disabled`;}));
+request('/api/status',{}).then(value=>{document.getElementById('status').textContent=JSON.stringify(value,null,2);document.getElementById('btc-backend').textContent=`Backend: ${value.bitcoinBackend}\nType: ${value.bitcoinBackendType}\nSigning enabled: ${value.bitcoinSigningEnabled?'yes':'no'}`}).catch(()=>{document.getElementById('status').textContent='Status unavailable'});
+</script></body></html>

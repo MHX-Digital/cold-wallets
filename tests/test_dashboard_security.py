@@ -10,6 +10,11 @@ import uuid
 from pathlib import Path
 
 from dashboard import server as dashboard
+from broadcaster.store import BroadcastStore
+from coordinator.api import WatchOnlyApi
+from coordinator.disposable_store import DisposableStore
+from coordinator.proposal_store import ProposalStore
+from coordinator.service import CoordinatorService
 
 
 class DashboardSecurityTests(unittest.TestCase):
@@ -29,6 +34,9 @@ class DashboardSecurityTests(unittest.TestCase):
             "cleaned": False,
         }]
         dashboard._load_html()
+        coordinator=CoordinatorService(ProposalStore(cls.temp_path/"proposals.sqlite"),DisposableStore(cls.temp_path/"disposable.sqlite"))
+        dashboard.WORKFLOW_API=WatchOnlyApi(coordinator,BroadcastStore(cls.temp_path/"broadcast.sqlite"))
+        coordinator.disposable.add("synthetic-address","bitcoin","mainnet","keyref:test")
         cls.httpd = dashboard.ThreadedHTTPServer(
             ("127.0.0.1", 0), dashboard.DashboardHandler)
         cls.port = cls.httpd.server_address[1]
@@ -51,6 +59,7 @@ class DashboardSecurityTests(unittest.TestCase):
         cls.httpd.shutdown()
         cls.httpd.server_close()
         cls.thread.join(timeout=5)
+        dashboard.WORKFLOW_API=None
         if cls.thread.is_alive():
             raise AssertionError("owned HTTP server thread did not stop")
         cls.manifest[1]["cleaned"] = True
@@ -176,6 +185,26 @@ class DashboardSecurityTests(unittest.TestCase):
             "/api/status", method="PUT", body=b"{}",
             headers=self.json_headers())
         self.assertEqual(status, 405)
+
+    def test_watch_only_proposal_export_get_and_idempotency(self):
+        payload={"from":"0x"+"11"*20,"to":"0x"+"22"*20,"valueWei":"3","nonce":"0","gasLimit":"21000","maxFeePerGasWei":"100","maxPriorityFeePerGasWei":"2","data":"0x","sources":[],"confirmNetwork":"ethereum-mainnet"}
+        key="test-idempotency-key-0001"; headers=self.json_headers(**{"Idempotency-Key":key})
+        status,_,body=self.request("/api/proposals/ethereum",method="POST",body=json.dumps(payload).encode(),headers=headers)
+        self.assertEqual(status,200); proposal=json.loads(body); proposal_id=proposal["proposalId"]
+        status,_,body=self.request(f"/api/proposals/{proposal_id}",headers=self.json_headers())
+        self.assertEqual(status,200); self.assertEqual(json.loads(body)["state"],"PREPARED")
+        status,_,body=self.request("/api/artifacts/export",method="POST",body=json.dumps({"proposalId":proposal_id}).encode(),headers=self.json_headers(**{"Idempotency-Key":"test-export-key-00001"}))
+        self.assertEqual(status,200); self.assertEqual(json.loads(body)["payload"]["proposalId"],proposal_id)
+        changed=dict(payload); changed["valueWei"]="4"
+        status,_,_=self.request("/api/proposals/ethereum",method="POST",body=json.dumps(changed).encode(),headers=headers)
+        self.assertEqual(status,400)
+
+    def test_watch_only_api_rejects_state_txid_and_remote_broadcast(self):
+        for payload in ({"state":"CONFIRMED"},{"txid":"client-value"},{"privateKey":"test-sentinel"}):
+            status,_,body=self.request("/api/broadcast/register",method="POST",body=json.dumps(payload).encode(),headers=self.json_headers(**{"Idempotency-Key":"test-register-key-01"}))
+            self.assertIn(status,{400}); self.assertNotIn(b"test-sentinel",body)
+        status,_,body=self.request("/api/disposable/reserve",method="POST",body=b'{"requestId":"request-1"}',headers=self.json_headers(**{"Idempotency-Key":"test-reserve-key-0001"}))
+        self.assertEqual(status,200); result=json.loads(body); self.assertEqual(result["state"],"RESERVED")
 
 
 if __name__ == "__main__":

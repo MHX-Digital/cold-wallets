@@ -4,7 +4,7 @@ import hashlib, json, os, secrets
 from pathlib import Path
 
 MAX_ARTIFACT_BYTES=1024*1024
-EXTENSIONS={"cold-wallets.eth-tx":".cw-eth-proposal","cold-wallets.eth-signed":".cw-eth-signed","cold-wallets.btc-signed":".cw-btc-signed"}
+EXTENSIONS={"cold-wallets.eth-tx":".cw-eth-proposal","cold-wallets.eth-signed":".cw-eth-signed","cold-wallets.btc-signed":".cw-btc-signed","cold-wallets.authenticated-store":".cw-vault","cold-wallets.backup":".cw-backup"}
 class ArtifactError(ValueError): pass
 PSBT_MAGIC=b"psbt\xff"
 
@@ -25,6 +25,19 @@ def _encode(payload: dict) -> bytes:
     encoded=json.dumps(wrapper,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode("utf-8")
     if len(encoded)>MAX_ARTIFACT_BYTES: raise ArtifactError("artifact too large")
     return encoded
+
+def pack(payload: dict) -> dict:
+    return json.loads(_encode(payload).decode("utf-8"))
+
+def unpack(wrapper: dict,*,expected_schema: str) -> dict:
+    try: raw=json.dumps(wrapper,separators=(",",":"),ensure_ascii=False).encode("utf-8")
+    except (TypeError,ValueError) as exc: raise ArtifactError("invalid artifact wrapper") from exc
+    if len(raw)>MAX_ARTIFACT_BYTES or not isinstance(wrapper,dict) or set(wrapper)!={"payload","artifactSha256"}: raise ArtifactError("invalid artifact wrapper")
+    payload=wrapper["payload"]
+    if not isinstance(payload,dict) or payload.get("schema")!=expected_schema: raise ArtifactError("artifact schema mismatch")
+    canonical=json.dumps(payload,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()
+    if not isinstance(wrapper["artifactSha256"],str) or not secrets.compare_digest(hashlib.sha256(canonical).hexdigest(),wrapper["artifactSha256"]): raise ArtifactError("artifact hash mismatch")
+    return payload
 
 def write(root: Path, name: str, payload: dict, *, overwrite: bool=False) -> Path:
     root=root.resolve(); root.mkdir(mode=0o700,parents=True,exist_ok=True)
@@ -54,12 +67,7 @@ def read(root: Path, name: str, *, expected_schema: str) -> dict:
     if not raw or len(raw)>MAX_ARTIFACT_BYTES: raise ArtifactError("invalid artifact size")
     try: wrapper=json.loads(raw.decode("utf-8"))
     except (UnicodeDecodeError,json.JSONDecodeError) as exc: raise ArtifactError("invalid artifact JSON") from exc
-    if not isinstance(wrapper,dict) or set(wrapper)!={"payload","artifactSha256"}: raise ArtifactError("invalid artifact wrapper")
-    payload=wrapper["payload"]
-    if not isinstance(payload,dict) or payload.get("schema")!=expected_schema: raise ArtifactError("artifact schema mismatch")
-    canonical=json.dumps(payload,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()
-    if not secrets.compare_digest(hashlib.sha256(canonical).hexdigest(),wrapper["artifactSha256"]): raise ArtifactError("artifact hash mismatch")
-    return payload
+    return unpack(wrapper,expected_schema=expected_schema)
 
 def write_psbt(root: Path,name: str,content: bytes,*,overwrite: bool=False) -> tuple[Path,str]:
     if not isinstance(content,bytes) or not content.startswith(PSBT_MAGIC) or len(content)>MAX_ARTIFACT_BYTES: raise ArtifactError("invalid PSBT artifact")

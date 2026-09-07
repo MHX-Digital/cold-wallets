@@ -18,6 +18,7 @@ class ProposalStore:
                 db.execute("CREATE TABLE IF NOT EXISTS schema_version(version INTEGER NOT NULL CHECK(version=1))")
                 if not db.execute("SELECT 1 FROM schema_version").fetchone(): db.execute("INSERT INTO schema_version VALUES(1)")
                 db.execute("CREATE TABLE IF NOT EXISTS proposals(proposal_id TEXT PRIMARY KEY,protocol TEXT NOT NULL,network TEXT NOT NULL,envelope_json TEXT NOT NULL,state TEXT NOT NULL,signed_tx_hash TEXT,updated_at INTEGER NOT NULL)")
+                db.execute("CREATE TABLE IF NOT EXISTS idempotency(request_key TEXT NOT NULL,operation TEXT NOT NULL,payload_hash TEXT NOT NULL,response_json TEXT NOT NULL,created_at INTEGER NOT NULL,PRIMARY KEY(request_key,operation))")
         except sqlite3.DatabaseError as exc: raise ProposalStoreError("invalid proposal database") from exc
     def create(self,envelope: dict):
         proposal_id=envelope["proposalId"]; encoded=json.dumps(envelope,sort_keys=True,separators=(",",":")); now=int(time.time())
@@ -37,3 +38,9 @@ class ProposalStore:
         with self._db() as db: row=db.execute("SELECT envelope_json,state,signed_tx_hash FROM proposals WHERE proposal_id=?",(proposal_id,)).fetchone()
         if not row: raise ProposalStoreError("unknown proposal")
         return json.loads(row[0]),row[1],row[2]
+    def get_idempotent(self,key,operation):
+        with self._db() as db: row=db.execute("SELECT payload_hash,response_json FROM idempotency WHERE request_key=? AND operation=?",(key,operation)).fetchone()
+        return None if row is None else (row[0],json.loads(row[1]))
+    def put_idempotent(self,key,operation,payload_hash,response):
+        encoded=json.dumps(response,sort_keys=True,separators=(",",":"))
+        with self._db() as db: db.execute("INSERT INTO idempotency VALUES(?,?,?,?,?)",(key,operation,payload_hash,encoded,int(time.time())))

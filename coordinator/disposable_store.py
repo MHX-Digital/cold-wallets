@@ -54,3 +54,7 @@ class DisposableStore:
             for (ident,) in rows:
                 db.execute("UPDATE addresses SET state='EXPIRED',updated_at=? WHERE id=?",(now,ident)); db.execute("INSERT OR IGNORE INTO history(address_id,from_state,to_state,at) VALUES(?,'RESERVED','EXPIRED',?)",(ident,now))
             db.commit(); return len(rows)
+    def get(self,ident):
+        with self._db() as db: row=db.execute("SELECT id,address,protocol,network,state FROM addresses WHERE id=?",(ident,)).fetchone()
+        if not row: raise AddressStoreError("unknown address")
+        return dict(zip(("id","address","protocol","network","state"),row))

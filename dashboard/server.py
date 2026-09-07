@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Local watch-only coordinator UI; deliberately has no key/signing/network code."""
 from __future__ import annotations
-import hmac, json, secrets, threading
+import hmac,json,os,re,secrets,threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from coordinator.service import public_capabilities
+from coordinator.api import ApiError,WatchOnlyApi
 
 DASHBOARD_DIR=Path(__file__).resolve().parent
 PORT=8888
@@ -13,6 +14,7 @@ REQUEST_TIMEOUT_SECONDS=5
 SESSION_TOKEN=secrets.token_urlsafe(32)
 _HTML_CACHE: bytes|None=None
 _SECRET_FIELDS=frozenset({"private_key","privatekey","mnemonic","seed","seed_phrase","wif"})
+WORKFLOW_API: WatchOnlyApi|None=None
 
 def _load_html():
     global _HTML_CACHE
@@ -29,6 +31,14 @@ def get_system_status():
     return status
 
 API_ROUTES={"/api/status":lambda _data:get_system_status()}
+POST_WORKFLOW_ROUTES={
+    "/api/proposals/ethereum":"create_ethereum",
+    "/api/artifacts/export":"export",
+    "/api/artifacts/import":"import_signed",
+    "/api/transactions/validate":"import_signed",
+    "/api/broadcast/register":"register_local",
+    "/api/disposable/reserve":"reserve",
+}
 
 class DashboardHandler(BaseHTTPRequestHandler):
     server_version="ColdWalletCoordinator"; sys_version=""
@@ -54,10 +64,20 @@ class DashboardHandler(BaseHTTPRequestHandler):
         elif path in {"/","/index.html"}:
             if _HTML_CACHE is None: self._send_json({"error":"Internal server error"},500); return
             self.send_response(200); self.send_header("Content-Type","text/html; charset=utf-8"); self.send_header("Content-Length",str(len(_HTML_CACHE))); self._security_headers(); self.end_headers(); self.wfile.write(_HTML_CACHE)
+        elif path.startswith("/api/"):
+            match=re.fullmatch(r"/api/(proposals|broadcast|disposable)/([A-Za-z0-9x]+)",path)
+            if not match: self._send_json({"error":"Not found"},404); return
+            if not self._authorized(): self._send_json({"error":"Request rejected"},403); return
+            if WORKFLOW_API is None: self._send_json({"error":"Coordinator state is not configured"},503); return
+            try:
+                kind,identifier=match.groups()
+                value=WORKFLOW_API.get_proposal(identifier) if kind=="proposals" else (WORKFLOW_API.get_broadcast(identifier) if kind=="broadcast" else WORKFLOW_API.get_disposable(identifier))
+                self._send_json(value)
+            except Exception: self._send_json({"error":"Request rejected"},400)
         else: self._send_json({"error":"Not found"},404)
     def do_POST(self):
-        handler=API_ROUTES.get(self.path.partition("?")[0])
-        if handler is None: self._send_json({"error":"Not found"},404); return
+        path=self.path.partition("?")[0]; handler=API_ROUTES.get(path); workflow_method=POST_WORKFLOW_ROUTES.get(path)
+        if handler is None and workflow_method is None: self._send_json({"error":"Not found"},404); return
         if not self._valid_host() or not self._authorized(): self._send_json({"error":"Request rejected"},403); return
         if self.headers.get("Transfer-Encoding"): self._send_json({"error":"Transfer-Encoding not supported"},400); return
         if self.headers.get_content_type()!="application/json": self._send_json({"error":"Content-Type must be application/json"},415); return
@@ -68,7 +88,13 @@ class DashboardHandler(BaseHTTPRequestHandler):
             if not isinstance(data,dict): raise ValueError
         except (ValueError,json.JSONDecodeError): self._send_json({"error":"Invalid JSON body"},400); return
         if _contains_secret_field(data): self._send_json({"error":"Secret-bearing payload rejected"},400); return
-        try: self._send_json(handler(data))
+        try:
+            if handler is not None: result=handler(data)
+            else:
+                if WORKFLOW_API is None: self._send_json({"error":"Coordinator state is not configured"},503); return
+                key=self.headers.get("Idempotency-Key",""); result=getattr(WORKFLOW_API,workflow_method)(data,key)
+            self._send_json(result)
+        except ApiError: self._send_json({"error":"Request rejected"},400)
         except Exception: self._send_json({"error":"Internal server error"},500)
     def _method_not_allowed(self): self._send_json({"error":"Method not allowed"},405)
     do_OPTIONS=do_PUT=do_DELETE=do_PATCH=_method_not_allowed
@@ -83,6 +109,14 @@ class ThreadedHTTPServer(HTTPServer):
         finally: self.shutdown_request(request)
 
 def main():
+    global WORKFLOW_API
+    state_root=os.environ.get("COLD_WALLETS_COORDINATOR_STATE")
+    if state_root:
+        from broadcaster.store import BroadcastStore
+        from coordinator.disposable_store import DisposableStore
+        from coordinator.proposal_store import ProposalStore
+        from coordinator.service import CoordinatorService
+        root=Path(state_root).resolve(); WORKFLOW_API=WatchOnlyApi(CoordinatorService(ProposalStore(root/"proposals.sqlite"),DisposableStore(root/"disposable.sqlite")),BroadcastStore(root/"broadcast.sqlite"))
     _load_html(); server=ThreadedHTTPServer(("127.0.0.1",PORT),DashboardHandler)
     try: server.serve_forever()
     except KeyboardInterrupt: pass
