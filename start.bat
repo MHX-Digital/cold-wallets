@@ -46,7 +46,7 @@ if not exist "%PYTHON%" (
 for /f "tokens=*" %%v in ('"%PYTHON%" --version 2^>^&1') do echo       %%v [OK]
 
 :: ============================================================================
-:: [2] INSTALL DEPENDENCIES
+:: [2] VERIFY DEPENDENCIES (never install at runtime)
 :: ============================================================================
 
 echo.
@@ -54,14 +54,11 @@ echo [2/3] Checking dependencies...
 
 "%PYTHON%" -c "import eth_account, bit, requests, socks" >nul 2>&1
 if errorlevel 1 (
-    echo       Installing missing dependencies...
-    "%PYTHON%" -m pip install --quiet --disable-pip-version-check eth-account bit "requests[socks]" PySocks
-    if errorlevel 1 (
-        echo       [ERROR] Failed to install dependencies!
-        pause
-        exit /b 1
-    )
-    echo       Dependencies installed [OK]
+    echo       [ERROR] Required dependencies are missing.
+    echo       Runtime installation is disabled by security policy.
+    echo       Install only from a reviewed lockfile with verified hashes.
+    pause
+    exit /b 1
 ) else (
     echo       All dependencies present [OK]
 )
@@ -77,8 +74,8 @@ echo  ============================================
 echo   Dashboard: http://127.0.0.1:8888
 echo  ============================================
 echo.
-echo  Use the dashboard to manage Tor, wallets,
-echo  and transactions.
+echo  The dashboard is an online watch-only coordinator.
+echo  It cannot manage signing keys or download Tor.
 echo.
 echo  Press Ctrl+C to stop.
 echo.

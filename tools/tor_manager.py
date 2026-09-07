@@ -12,11 +12,6 @@ import sys
 import time
 from pathlib import Path
 
-try:
-    import requests
-except ImportError:
-    requests = None
-
 TOR_DIR = Path(__file__).parent / "tor_runtime"
 TOR_EXE = TOR_DIR / "tor" / "tor.exe"
 TORRC = TOR_DIR / "torrc"
@@ -26,11 +21,6 @@ SOCKS_PORT = 9050
 
 # Tor Expert Bundle URL (Windows x86_64)
 TOR_VERSION = "14.0.7"
-TOR_URL = (
-    "https://archive.torproject.org/tor-package-archive/"
-    f"torbrowser/{TOR_VERSION}/"
-    f"tor-expert-bundle-windows-x86_64-{TOR_VERSION}.tar.gz"
-)
 
 
 def _tcp_probe(port, timeout=0.5):
@@ -82,65 +72,16 @@ def is_managed_tor_running():
 
 
 def download_tor(progress_cb=None):
-    """Download and extract Tor Expert Bundle"""
+    """Runtime downloads are prohibited until official hashes are pinned."""
     if TOR_EXE.exists():
         return True, "Already downloaded"
 
-    if requests is None:
-        return False, "requests library not installed"
-
-    TOR_DIR.mkdir(parents=True, exist_ok=True)
-
     if progress_cb:
-        progress_cb("Downloading Tor Expert Bundle...")
-
-    try:
-        r = requests.get(TOR_URL, stream=True, timeout=120)
-        r.raise_for_status()
-
-        # Download to temp file (not RAM)
-        import tarfile
-        import tempfile
-        tmp = Path(tempfile.mktemp(suffix=".tar.gz",
-                                   dir=str(TOR_DIR)))
-        with open(tmp, "wb") as f:
-            for chunk in r.iter_content(chunk_size=65536):
-                f.write(chunk)
-
-        if progress_cb:
-            progress_cb("Extracting...")
-
-        with tarfile.open(str(tmp), mode="r:gz") as tar:
-            # Filter to prevent path traversal (Python 3.12+)
-            try:
-                tar.extractall(path=str(TOR_DIR),
-                               filter="data")
-            except TypeError:
-                # Python < 3.12: manual safety check
-                safe = []
-                base = str(TOR_DIR.resolve())
-                for member in tar.getmembers():
-                    dest = str(
-                        Path(TOR_DIR / member.name).resolve())
-                    if dest.startswith(base):
-                        safe.append(member)
-                tar.extractall(path=str(TOR_DIR),
-                               members=safe)
-
-        tmp.unlink(missing_ok=True)
-
-        if not TOR_EXE.exists():
-            # Search for it
-            found = list(TOR_DIR.rglob("tor.exe"))
-            if found:
-                return True, f"Downloaded (tor.exe at {found[0]})"
-            return False, "Download succeeded but tor.exe not found"
-
-        return True, "Downloaded and extracted"
-
-    except Exception as e:
-        return False, f"Download failed: {e}"
-
+        progress_cb("Runtime Tor download blocked by security policy")
+    return False, (
+        "Automatic Tor download is disabled. Install the pinned Tor version "
+        "manually after verifying its official checksum and signature."
+    )
 
 def _write_torrc():
     """Write minimal torrc"""
