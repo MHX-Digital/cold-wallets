@@ -68,3 +68,14 @@ P0: ampliar PSBT para vetores oficiais, P2PKH/P2SH-P2WPKH e validação independ
 | CW-011/012 | P1 | host offline e storage legado | CLI signer de processo único, formato autenticado e validação Windows offline | Windows isolado | alto | interrupção/recovery/canários | chave nunca cruza host online; recovery comprovado |
 | CW-019 | P1 | locks Windows ausentes | gerar/verificar em Windows x86-64 CPython 3.10/3.12/3.14 | runners Windows | médio | clean-room hash install | lock por alvo, backend registrado, suíte completa |
 | CW-020 | P2 | backup/restore | teste de restauração sintética e runbook operacional | decisão de custódia | médio | restore em mídia temporária | recuperação íntegra sem logs/segredos residuais |
+
+## Pendências após C7
+
+| Prioridade | Escopo | Critério objetivo |
+|---|---|---|
+| P0 | corrigir ownership somente dos oito diretórios legados listados em `28-c7-ownership-inventory.md`; remover arquivos Git específicos | zero `bit`, signers/senders antigos, install/download/admin entrypoints |
+| P0 | executar suíte hash-locked e testes AES-GCM/backup que foram pulados | adulteração, senha errada, downgrade, backup e restore passam com primitive real |
+| P0 | reproduzir/auditar secp256k1 e validar Bitcoin Core regtest | backend em estado APPROVED comprovado; E2E Bitcoin externo |
+| P1 | validar API/UI no Windows e gerar locks 3.10/3.12/3.14 | clean-room installs e suíte completa por alvo |
+| P1 | validar Tor e attestation Helios controlados | nenhuma rota direta; oito evidências Helios |
+| P2 | persistir política operacional/retention de artefatos e testar restore em mídia | recuperação sem dados reais ou resíduos |

@@ -31,7 +31,7 @@ Gate C7-G0: **APPROVED WITH RESERVATIONS**
 | `cold_wallets/` directory | `nobody` | `nogroup` | 755 | yes | yes | cannot delete/add entries as current user |
 | legacy key/sign/send files | `nobody` | `nogroup` | 644 or 664 | yes | yes | 664 files may be replaced; 644 files require owner action |
 | `tools/`, `rpc/`, `hardware/` directories | `nobody` | `nogroup` | 755 | yes | yes | direct removal/addition blocked; individual 664 files may be replaced |
-| 39 legacy Windows scripts | `nobody` | `nogroup` | mostly 644 | yes | yes | quarantine and deliver exact ownership command |
+| 38 quarantined scripts out of 40 `.bat`/`.ps1` files | `nobody` | `nogroup` | mostly 644 | yes | yes | retain two reviewed wrappers; quarantine the other 38 and deliver exact ownership command |
 | generated/untracked wallet directories | not inspected | not inspected | not inspected | no | no | excluded by secret-safety rule |
 
 The likely cause is a shared/container-created checkout: old trees and Git metadata

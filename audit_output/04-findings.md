@@ -137,3 +137,30 @@ que a barreira citada possui teste; não significa que o produto está liberado.
 | CW-020 | OPEN | OPEN | restore real não executado |
 | CW-021 | ACCEPTED TEMPORARILY | ACCEPTED TEMPORARILY | somente loopback IPv4 documentado |
 | CW-022 | VERIFIED | VERIFIED | Gate C6 estável; commits locais isolados |
+
+## Estado C7
+
+| ID | Severidade | Estado C7 | Evidência |
+|---|---|---|---|
+| CW-001 | CRITICAL | VERIFIED | Dashboard/API continuam sem signer; árvore transitiva e rotas testadas |
+| CW-002 | CRITICAL | VERIFIED | Host, Origin, token, body, métodos, schemas e idempotência persistente |
+| CW-003 | CRITICAL | VERIFIED | vetores de endereço preservados |
+| CW-004 | CRITICAL | PARTIAL | revisão PSBT watch-only existe; signing permanece bloqueado |
+| CW-005 | CRITICAL | PARTIAL | envelope/importação validam intenção; dados RPC continuam não verificados |
+| CW-006 | CRITICAL | PARTIAL | launcher seguro e quarentena; instaladores/downloaders 0644 continuam presentes |
+| CW-007 | CRITICAL | PARTIAL | README/UI alinhados; árvore RPC histórica permanece em quarentena |
+| CW-008 | HIGH | VERIFIED NO DASHBOARD | sem segredo/raw por padrão, sem local/session storage ou console payload |
+| CW-009 | HIGH | PARTIAL | política PSBT estreita; regtest/independência pendentes |
+| CW-010 | HIGH | PARTIAL | fluxo novo type 2; signers/senders antigos não foram fisicamente removidos |
+| CW-011 | HIGH | PARTIAL | formato scrypt/AES-GCM implementado; validação real C7 bloqueada pela dependência ausente |
+| CW-012 | HIGH | PARTIAL | isolamento estrutural; Windows/air gap não validados |
+| CW-013 | HIGH | VERIFIED | store integrado à API e reserva idempotente |
+| CW-014 | HIGH | VERIFIED LOCALMENTE | registro local e broadcaster persistentes; remoto continua desabilitado |
+| CW-015 | HIGH | PARTIAL | respostas novas redigidas; legado ainda contém logs inseguros |
+| CW-016 | HIGH | PARTIAL | classificação explícita; Helios real não atestado |
+| CW-017 | MEDIUM | PARTIAL | adapter central e denylist; scripts diretos permanecem |
+| CW-018 | MEDIUM | VERIFIED | rotas exatas, headers e métodos testados |
+| CW-019 | MEDIUM | PARTIAL | lock Linux anterior; Windows não validado |
+| CW-020 | MEDIUM | PARTIAL | backup/restore autenticado implementado; execução real da primitive pulada |
+| CW-021 | LOW | ACCEPTED TEMPORARILY | loopback IPv4 |
+| CW-022 | INFORMATIONAL | PARTIAL | conteúdo estável; ownership e buckets Git mistos persistem |
