@@ -1,39 +1,27 @@
 # Cold Wallets
 
-Offline-first Bitcoin & Ethereum wallet toolkit with privacy by default.
-
-All network operations routed through Tor. Transaction signing happens with the internet physically disabled (CLI mode) or online via dashboard. RPC queries verified cryptographically via Helios light client.
+Experimental Bitcoin & Ethereum wallet toolkit. **NO-GO for real funds.** The dashboard is an online watch-only coordinator, not a cold wallet. Legacy clients have not all been migrated to the Tor adapter or independently validated.
 
 ## Quick Start
 
-Double-click **`start.bat`**. It automatically:
+After creating a reviewed environment with pinned dependencies, run **`start.bat`**. It:
 1. Requests administrator privileges (UAC prompt)
-2. Checks Python and installs missing dependencies (`eth-account`, `bit`, `requests`, `PySocks`)
+2. Checks dependencies and fails closed if any are missing; it never installs them
 3. Opens the dashboard at `http://127.0.0.1:8888`
 
-From the dashboard:
-- **Start Tor** with one click (downloads Tor Expert Bundle ~21MB, runs `tor.exe` in background on port 9050)
-- **Start RPC Proxy** to route MetaMask/ETH queries through Tor (port 8545)
-- **Generate wallets** — keys displayed in sidebar with Show/Copy, saved to file
-- **Check balances** and **send BTC/ETH** via Tor (send-all pattern)
-- **Manage disposable addresses** — generate pool, get one-time addresses, track lifecycle
-- **Monitor system** — Tor, Docker, RPC, dependencies, network status
-
-For maximum security (offline signing with internet disabled), use the CLI scripts directly.
+The dashboard cannot generate/import keys, sign, broadcast, launch Tor or execute wallet scripts. Signing belongs to a separate offline component. Windows adapter toggling is not an air gap.
 
 ## Features
 
-- **One-click setup** — `start.bat` handles admin elevation, dependencies, and dashboard launch
-- **Automatic Tor** — downloads and runs `tor.exe` in background (SOCKS5 port 9050, no browser needed)
-- **Dashboard** — visual interface at `127.0.0.1:8888`, threaded server, zero external dependencies
-- **Sidebar wallet viewer** — generated wallets persist in right sidebar, reopen anytime
+- **Fail-closed setup** — no runtime package installation or Tor download
+- **Dashboard** — watch-only interface at `127.0.0.1:8888`
 - **Offline signing (CLI)** — internet disabled automatically during key generation and TX signing
 - **Send-all** — always sends entire balance, no change output (BTC) or residual wei (ETH)
-- **Tor-only networking** — all RPC calls, UTXO lookups, and broadcasts go through Tor
+- **Tor adapter** — new integrations require SOCKS5h; legacy clients remain under migration
 - **EIP-1559 fees** — ETH uses type 2 transactions with `eth_feeHistory` percentile-based estimation
 - **BTC fee by address type** — native segwit (bc1q), wrapped segwit (3...), legacy (1...) with accurate vsize
 - **Native SegWit (bc1q)** — manual bech32 derivation since `bit` library only supports P2SH-wrapped
-- **Trustless RPC** — Helios light client verifies Ethereum responses cryptographically via Docker
+- **Explicit RPC trust** — public RPC is unverified; Helios requires separate evidence
 - **Disposable addresses** — one-time address pool with lifecycle (unused -> active -> funded -> spent)
 - **MetaMask privacy** — local proxy routes RPC calls through Tor on port 8545
 
@@ -41,10 +29,10 @@ For maximum security (offline signing with internet disabled), use the CLI scrip
 
 - **Python 3.10+** — tested with 3.14 (`C:\Python314\python.exe`)
 - **Windows 10/11** — administrator for network control
-- **Internet** — for first-time dependency install and Tor download
+- Provisioning must be manual from reviewed, pinned artifacts
 - **Docker Desktop** — optional, for Helios light client
 
-Dependencies are installed automatically by `start.bat`:
+The launcher does not install dependencies. The requirements file is not yet hash-locked:
 ```
 eth-account  bit  requests[socks]  PySocks
 ```

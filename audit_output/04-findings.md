@@ -53,3 +53,30 @@ Os achados permanecem abertos ou parcialmente mitigados; a documentação C3 nã
 | CW-018 | MITIGADO NO HANDLER PRINCIPAL | somente `/` e `/index.html` servem HTML; demais rotas 404; headers de segurança e timeout de socket adicionados |
 
 Todos os demais findings permanecem abertos. “Contido” não equivale a correção arquitetural nem autoriza fundos reais.
+
+## Estado C4
+
+| ID | Estado anterior | Estado C4 | Evidência |
+|---|---|---|---|
+| CW-001 | contido | VERIFIED | Dashboard sem imports, handlers, caminhos ou UI secret-bearing; testes AST/HTTP |
+| CW-002 | partial | VERIFIED no Dashboard | única API status, Host/Origin/token/body/métodos testados |
+| CW-003 | mitigado | VERIFIED | vetores Base58Check/Bech32(m) |
+| CW-004 | open | OPEN | PSBT indisponível localmente |
+| CW-005 | open | PARTIAL | envelope/política signer; dados RPC ainda não verificados |
+| CW-006 | open | PARTIAL | runtime pip/Tor bloqueados; lock/hash ainda pendentes |
+| CW-007 | partial | PARTIAL | UI declara watch-only/RPC não verificado |
+| CW-008 | partial | VERIFIED no Dashboard | JS secret-bearing removido; resposta exibida como texto |
+| CW-009 | open | OPEN | depende de PSBT |
+| CW-010 | open | PARTIAL | signer aceita somente tipo 2; cliente legado permanece |
+| CW-011 | open | PARTIAL | artefatos atômicos; chaves legadas plaintext permanecem |
+| CW-012 | open | PARTIAL | signer estruturalmente sem rede; host operacional não validado |
+| CW-013 | open | OPEN | estado descartável não migrado |
+| CW-014 | open | VERIFIED na camada nova | SQLite/unique/concorrência/restart/retries |
+| CW-015 | partial | PARTIAL | Dashboard não loga requests; redactor global pendente |
+| CW-016 | partial | PARTIAL | UI não afirma Helios; attestation pendente |
+| CW-017 | open | PARTIAL | adapter fail-closed testado; clientes legados não migrados |
+| CW-018 | mitigado | VERIFIED | rotas/headers/métodos testados |
+| CW-019 | open | PARTIAL | runtime install bloqueado; lockfile/hashes pendentes |
+| CW-020 | open | OPEN | backup/recovery pendente |
+| CW-021 | open | ACCEPTED TEMPORARILY | bind IPv4 loopback documentado |
+| CW-022 | informational | VERIFIED | gates e commits isolados; sem interferência C4 |

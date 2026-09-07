@@ -49,3 +49,7 @@ Pendências mantidas no plano: remover código legado não roteado, coordinator 
 ## Protocolo de teste aplicável
 
 Cada execução terá `run-id`, raiz sob `/tmp/cold-wallets-test-<run-id>`, manifesto de recursos próprios e ciclo `preflight → start → readiness → execute → collect → stop → cleanup → verify`. Testes puros não criarão chaves. Testes HTTP, se necessários, usarão porta efêmera e encerrarão somente o PID/thread/socket criado pela própria fixture. Resíduo permitido: zero.
+
+## Pendências após C4
+
+P0: instalar somente após aprovação a dependência Ethereum pinada e executar vetores reais; selecionar e pinnear biblioteca PSBT. P1: migrar clientes legados ao adapter Tor e integrar broadcaster remoto simulado completo. P2: lockfile com hashes, storage legado e estado descartável. P3: validação operacional Windows/air-gap e recuperação.
