@@ -1,4 +1,4 @@
-import ast,json,unittest
+import ast,unittest
 from pathlib import Path
 
 def imports(path):
@@ -31,21 +31,31 @@ def reachable(start):
     return seen
 
 class ArchitectureTests(unittest.TestCase):
-    def test_legacy_quarantine_is_complete_and_unreachable(self):
-        manifest=json.loads(Path("security/legacy_quarantine.json").read_text(encoding="utf-8")); quarantined={Path(item) for item in manifest["scripts"]}
+    def test_legacy_paths_are_physically_absent(self):
+        forbidden=(
+            "cold_wallets/generate_wallets.py","cold_wallets/sign_btc.py","cold_wallets/sign_eth.py",
+            "cold_wallets/enviar_btc.py","cold_wallets/enviar_eth.py","cold_wallets/network_control.py",
+            "cold_wallets/requirements.txt","cold_wallets/hot_disposable/disposable_manager.py",
+            "cold_wallets/hot_disposable/generate_disposable.py","cold_wallets/hot_disposable/sweep_to_cold.py",
+            "cold_wallets/tools/fetch_tx_data.py","cold_wallets/tools/broadcast_tor.py",
+            "tools/check_tor.py","tools/eth_rpc_proxy.py","tools/tor_manager.py",
+            "security/legacy_quarantine.json",
+            "rpc/docs/quickstart.md","rpc/docs/runbook.md","rpc/docs/threat-model.md",
+            "rpc/helios/config.example.toml","rpc/helios/docker-compose.yml",
+            "rpc/l2-templates/arbitrum/docker-compose.yml","rpc/l2-templates/optimism/docker-compose.yml",
+            "rpc/reverse-proxy/docker-compose.yml","rpc/reverse-proxy/nginx.conf",
+            "rpc/tor/docker-compose.yml","rpc/tor/torrc",
+            "rpc/wireguard/client.conf.example","rpc/wireguard/wg0.conf.example",
+        )
+        self.assertEqual([name for name in forbidden if Path(name).exists()],[])
+
+    def test_only_reviewed_windows_scripts_remain(self):
         scripts={path for suffix in ("*.bat","*.cmd","*.ps1") for path in Path(".").rglob(suffix)}
-        allowed={Path("start.bat"),Path("requirements/generate-windows-lock.ps1")}
-        self.assertEqual(scripts-allowed,quarantined)
-        reachable_text=(Path("start.bat").read_text(encoding="utf-8")+Path("dashboard/index.html").read_text(encoding="utf-8")+Path("dashboard/server.py").read_text(encoding="utf-8")).casefold()
-        self.assertFalse(any(str(path).casefold() in reachable_text for path in quarantined))
-        dangerous=("curl","bitsadmin","invoke-webrequest","invoke-restmethod","start-bitstransfer","pip install","docker pull","runas","net session","netsh advfirewall","disable-netadapter","start-process")
+        self.assertEqual(scripts,{Path("start.bat"),Path("requirements/generate-windows-lock.ps1")})
+        dangerous=("curl","bitsadmin","certutil","invoke-webrequest","invoke-restmethod","start-bitstransfer","pip install","docker pull","runas","net session","netsh advfirewall","disable-netadapter","enable-netadapter")
         for path in scripts:
             text=path.read_text(encoding="utf-8",errors="replace").casefold()
-            if any(token in text for token in dangerous): self.assertIn(path,quarantined)
-        for name in ("cold_wallets/enviar_btc.py","cold_wallets/enviar_eth.py","cold_wallets/tools/fetch_tx_data.py","cold_wallets/tools/broadcast_tor.py","tools/eth_rpc_proxy.py","tools/tor_manager.py"):
-            statements=ast.parse(Path(name).read_text(encoding="utf-8")).body
-            if statements and isinstance(statements[0],ast.Expr): statements=statements[1:]
-            self.assertIsInstance(statements[0],ast.Raise,name)
+            self.assertFalse(any(token in text for token in dangerous),str(path))
     def test_trust_boundaries(self):
         self.assertFalse(imports(Path("dashboard/server.py")) & {"signer","cold_wallets","requests","socket","subprocess"})
         self.assertFalse(imports(Path("signer/ethereum.py")) & {"requests","socket","urllib","dashboard","broadcaster","transport"})
@@ -57,11 +67,12 @@ class ArchitectureTests(unittest.TestCase):
             self.assertFalse(imports(path) & {"requests","socket","urllib","dashboard","broadcaster","transport"},str(path))
         for path in Path("broadcaster").glob("*.py"):
             self.assertFalse(imports(path) & {"signer","cold_wallets"},str(path))
-    def test_runtime_install_and_tor_download_are_blocked(self):
+    def test_runtime_install_and_tor_download_are_absent(self):
         launcher=Path("start.bat").read_text(encoding="utf-8").casefold()
         self.assertNotIn("-m pip install",launcher)
-        tor=Path("tools/tor_manager.py").read_text(encoding="utf-8")
-        self.assertNotIn("requests.get",tor); self.assertNotIn("extractall",tor)
+        production=[path for suffix in ("*.py","*.bat","*.cmd","*.ps1") for path in Path(".").rglob(suffix) if path.parts[0] not in {"tests","audit_output",".git"}]
+        corpus="\n".join(path.read_text(encoding="utf-8",errors="replace").casefold() for path in production)
+        self.assertNotRegex(corpus,r"(?:pip\s+install|requests\.get\([^)]*(?:tor|\.zip)|urlretrieve\()")
 
     def test_python_http_clients_use_central_allowlist(self):
         allow={Path("transport/requests_client.py")}
@@ -72,8 +83,8 @@ class ArchitectureTests(unittest.TestCase):
             if names & {"requests","urllib3","httpx","aiohttp"}: offenders.append(str(path))
         self.assertEqual(offenders,[])
 
-    def test_new_architecture_never_imports_or_declares_legacy_bit_package(self):
-        roots=("dashboard","coordinator","signer","broadcaster","transport")
+    def test_repository_never_imports_or_declares_legacy_bit_package(self):
+        roots=("dashboard","coordinator","signer","broadcaster","transport","storage","cold_wallets")
         offenders=[]
         for root in roots:
             for path in Path(root).rglob("*.py"):
@@ -88,10 +99,9 @@ class ArchitectureTests(unittest.TestCase):
             self.assertNotIn(forbidden,launcher)
         self.assertIn("dashboard\\server.py",launcher)
 
-    def test_replaced_network_entrypoints_fail_before_legacy_imports(self):
-        for name in ("cold_wallets/tools/fetch_tx_data.py","cold_wallets/tools/broadcast_tor.py","tools/eth_rpc_proxy.py"):
-            tree=ast.parse(Path(name).read_text(encoding="utf-8")); statements=tree.body
-            if statements and isinstance(statements[0],ast.Expr) and isinstance(statements[0].value,ast.Constant): statements=statements[1:]
-            self.assertIsInstance(statements[0],ast.Raise,name)
+    def test_no_parallel_broadcaster_or_secret_entrypoint(self):
+        python_files={path for path in Path(".").rglob("*.py") if path.parts[0] not in {"tests","audit_output"}}
+        forbidden_names={"generate_wallets.py","sign_btc.py","sign_eth.py","enviar_btc.py","enviar_eth.py","broadcast_tor.py","eth_rpc_proxy.py"}
+        self.assertEqual([str(path) for path in python_files if path.name in forbidden_names],[])
 
 if __name__=="__main__": unittest.main()
