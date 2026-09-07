@@ -72,11 +72,34 @@ class ArchitectureTests(unittest.TestCase):
 
     def test_only_reviewed_windows_scripts_remain(self):
         scripts={path for suffix in ("*.bat","*.cmd","*.ps1") for path in Path(".").rglob(suffix)}
-        self.assertEqual(scripts,{Path("start.bat"),Path("requirements/generate-windows-lock.ps1")})
+        self.assertEqual(scripts,{
+            Path("start.bat"),Path("requirements/generate-windows-lock.ps1"),
+            Path("validation/windows/c8-preflight.ps1"),Path("validation/windows/c8-python-matrix.ps1"),
+        })
         dangerous=("curl","bitsadmin","certutil","invoke-webrequest","invoke-restmethod","start-bitstransfer","pip install","docker pull","runas","net session","netsh advfirewall","disable-netadapter","enable-netadapter")
         for path in scripts:
             text=path.read_text(encoding="utf-8",errors="replace").casefold()
-            self.assertFalse(any(token in text for token in dangerous),str(path))
+            checked=dangerous if path!=Path("validation/windows/c8-python-matrix.ps1") else tuple(token for token in dangerous if token!="pip install")
+            self.assertFalse(any(token in text for token in checked),str(path))
+
+    def test_c8_windows_harness_is_native_only_and_fail_closed(self):
+        preflight=Path("validation/windows/c8-preflight.ps1").read_text(encoding="utf-8").casefold()
+        matrix=Path("validation/windows/c8-python-matrix.ps1").read_text(encoding="utf-8").casefold()
+        for text in (preflight,matrix):
+            self.assertIn("osplatform]::windows",text)
+            self.assertNotIn("invoke-webrequest",text)
+            self.assertNotIn("invoke-restmethod",text)
+            self.assertNotIn("start-process",text)
+            self.assertNotIn("stop-process",text)
+            self.assertNotIn("taskkill",text)
+            self.assertNotIn("netsh",text)
+        self.assertIn("get-maskedidentifier",preflight)
+        self.assertIn("machineidmasked = get-maskedidentifier",preflight)
+        self.assertIn("useridmasked = get-maskedidentifier",preflight)
+        self.assertIn("--no-index",matrix)
+        self.assertIn("--require-hashes",matrix)
+        self.assertIn("finally",matrix)
+        self.assertIn("cold-wallets-c8-*",matrix)
     def test_trust_boundaries(self):
         self.assertFalse(imports(Path("dashboard/server.py")) & {"signer","cold_wallets","requests","socket","subprocess"})
         self.assertFalse(imports(Path("signer/ethereum.py")) & {"requests","socket","urllib","dashboard","broadcaster","transport"})
@@ -91,9 +114,13 @@ class ArchitectureTests(unittest.TestCase):
     def test_runtime_install_and_tor_download_are_absent(self):
         launcher=Path("start.bat").read_text(encoding="utf-8").casefold()
         self.assertNotIn("-m pip install",launcher)
-        production=[path for suffix in ("*.py","*.bat","*.cmd","*.ps1") for path in Path(".").rglob(suffix) if path.parts[0] not in {"tests","audit_output",".git"}]
+        explicit_offline_harness=Path("validation/windows/c8-python-matrix.ps1")
+        production=[path for suffix in ("*.py","*.bat","*.cmd","*.ps1") for path in Path(".").rglob(suffix) if path.parts[0] not in {"tests","audit_output",".git"} and path!=explicit_offline_harness]
         corpus="\n".join(path.read_text(encoding="utf-8",errors="replace").casefold() for path in production)
         self.assertNotRegex(corpus,r"(?:pip\s+install|requests\.get\([^)]*(?:tor|\.zip)|urlretrieve\()")
+        harness=explicit_offline_harness.read_text(encoding="utf-8").casefold()
+        self.assertIn("--no-index",harness); self.assertIn("--require-hashes",harness)
+        self.assertNotRegex(harness,r"(?:invoke-webrequest|invoke-restmethod|curl\s|urlretrieve\()")
 
     def test_python_http_clients_use_central_allowlist(self):
         allow={Path("transport/requests_client.py")}

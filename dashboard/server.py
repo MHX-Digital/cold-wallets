@@ -8,7 +8,14 @@ from coordinator.service import public_capabilities
 from coordinator.api import ApiError,WatchOnlyApi
 
 DASHBOARD_DIR=Path(__file__).resolve().parent
-PORT=8888
+def _configured_port():
+    raw=os.environ.get("COLD_WALLETS_PORT","8888")
+    try: port=int(raw,10)
+    except ValueError as exc: raise SystemExit("COLD_WALLETS_PORT must be an integer") from exc
+    if not 1<=port<=65535: raise SystemExit("COLD_WALLETS_PORT must be between 1 and 65535")
+    return port
+
+PORT=_configured_port()
 MAX_REQUEST_BODY=1536*1024
 REQUEST_TIMEOUT_SECONDS=5
 SESSION_TOKEN=secrets.token_urlsafe(32)
