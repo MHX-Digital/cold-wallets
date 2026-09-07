@@ -12,6 +12,6 @@
   ],
   "legacy_python": [
     "cold_wallets/generate_wallets.py", "cold_wallets/sign_btc.py", "cold_wallets/sign_eth.py", "cold_wallets/enviar_btc.py", "cold_wallets/enviar_eth.py", "cold_wallets/network_control.py",
-    "cold_wallets/hot_disposable/generate_disposable.py", "cold_wallets/hot_disposable/disposable_manager.py", "cold_wallets/hot_disposable/sweep_to_cold.py"
+    "cold_wallets/hot_disposable/generate_disposable.py", "cold_wallets/hot_disposable/disposable_manager.py", "cold_wallets/hot_disposable/sweep_to_cold.py", "tools/tor_manager.py"
   ]
 }

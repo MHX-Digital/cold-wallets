@@ -42,6 +42,10 @@ class ArchitectureTests(unittest.TestCase):
         for path in scripts:
             text=path.read_text(encoding="utf-8",errors="replace").casefold()
             if any(token in text for token in dangerous): self.assertIn(path,quarantined)
+        for name in ("cold_wallets/enviar_btc.py","cold_wallets/enviar_eth.py","cold_wallets/tools/fetch_tx_data.py","cold_wallets/tools/broadcast_tor.py","tools/eth_rpc_proxy.py","tools/tor_manager.py"):
+            statements=ast.parse(Path(name).read_text(encoding="utf-8")).body
+            if statements and isinstance(statements[0],ast.Expr): statements=statements[1:]
+            self.assertIsInstance(statements[0],ast.Raise,name)
     def test_trust_boundaries(self):
         self.assertFalse(imports(Path("dashboard/server.py")) & {"signer","cold_wallets","requests","socket","subprocess"})
         self.assertFalse(imports(Path("signer/ethereum.py")) & {"requests","socket","urllib","dashboard","broadcaster","transport"})

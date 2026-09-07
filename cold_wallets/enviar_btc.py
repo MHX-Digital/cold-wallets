@@ -8,6 +8,10 @@ ENVIAR BITCOIN - SEND-ALL AUTOMATIZADO VIA TOR
 5. Liga internet, broadcast via Tor
 """
 
+raise SystemExit(
+    "LEGACY_BLOCKED: use the watch-only coordinator, offline PSBT signer, and persistent broadcaster."
+)
+
 import json
 import sys
 import time

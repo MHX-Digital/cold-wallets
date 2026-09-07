@@ -5,6 +5,10 @@ Uses Tor Expert Bundle (standalone, no browser needed).
 SOCKS5 proxy on 127.0.0.1:9050
 """
 
+raise SystemExit(
+    "LEGACY_BLOCKED: Tor lifecycle must be provisioned and verified manually outside the Dashboard."
+)
+
 import os
 import socket
 import subprocess
