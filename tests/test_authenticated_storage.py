@@ -24,9 +24,13 @@ class AuthenticatedStorageContractTests(unittest.TestCase):
         with self.assertRaises(StorageError): open_sealed(envelope,b"wrong-password")
 
     def test_all_authenticated_fields_and_randomness(self):
-        try: envelope=seal(self.data,self.password,{"purpose":"synthetic-fixture"})
+        random_values=[b"\x01"*16,b"\x02"*12,b"\x03"*16,b"\x04"*12]
+        try:
+            with patch("storage.authenticated.secrets.token_bytes",side_effect=random_values) as rng:
+                envelope=seal(self.data,self.password,{"purpose":"synthetic-fixture"})
+                second=seal(self.data,self.password,{"purpose":"synthetic-fixture"})
         except StorageBackendUnavailable: self.skipTest("hash-locked PyCryptodome environment required")
-        second=seal(self.data,self.password,{"purpose":"synthetic-fixture"})
+        self.assertEqual(rng.call_count,4)
         self.assertNotEqual(envelope["kdf"]["salt"],second["kdf"]["salt"])
         self.assertNotEqual(envelope["cipher"]["nonce"],second["cipher"]["nonce"])
         self.assertNotIn(self.data, json.dumps(envelope,sort_keys=True).encode())
