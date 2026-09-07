@@ -99,7 +99,7 @@ class ArchitectureTests(unittest.TestCase):
         self.assertIn("--no-index",matrix)
         self.assertIn("--require-hashes",matrix)
         self.assertIn("finally",matrix)
-        self.assertIn("cold-wallets-c8-*",matrix)
+        self.assertIn("^cold-wallets-c8-[0-9a-f]{32}$",matrix)
     def test_trust_boundaries(self):
         self.assertFalse(imports(Path("dashboard/server.py")) & {"signer","cold_wallets","requests","socket","subprocess"})
         self.assertFalse(imports(Path("signer/ethereum.py")) & {"requests","socket","urllib","dashboard","broadcaster","transport"})
