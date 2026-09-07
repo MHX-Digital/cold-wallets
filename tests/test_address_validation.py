@@ -1,6 +1,12 @@
 import unittest
 
-from cold_wallets.address_validation import validate_btc_address
+from cold_wallets.address_validation import (
+    _BECH32M,
+    _BECH32_INDEX,
+    _bech32_hrp_expand,
+    _bech32_polymod,
+    validate_btc_address,
+)
 
 
 class BitcoinAddressValidationTests(unittest.TestCase):
@@ -25,6 +31,14 @@ class BitcoinAddressValidationTests(unittest.TestCase):
 
     def test_known_bip84_mainnet_vector(self):
         self.assert_valid("bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu")
+
+    def test_known_bip350_bech32m_checksum_vector(self):
+        # BIP350 valid Bech32m string: A1LQFN3A.
+        values = [_BECH32_INDEX[char] for char in "lqfn3a"]
+        self.assertEqual(
+            _bech32_polymod(_bech32_hrp_expand("a") + values),
+            _BECH32M,
+        )
 
     def test_segwit_mixed_case_and_checksum_mutation_are_rejected(self):
         self.assert_invalid("bc1Qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu")
