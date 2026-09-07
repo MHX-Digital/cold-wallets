@@ -12,4 +12,9 @@ class DependencyLockTests(unittest.TestCase):
             for line in Path("requirements",name).read_text().splitlines():
                 if line.strip(): self.assertRegex(line,r"^[A-Za-z0-9_.-]+(?:\[socks\])?==[^ ]+$")
 
+    def test_build_and_psbt_locks_are_hashed(self):
+        for name in ("build-py312.lock","psbt-py312-linux.lock"):
+            for line in Path("requirements",name).read_text().splitlines():
+                if line.strip(): self.assertRegex(line,r"^[A-Za-z0-9_.-]+==[^ ]+ --hash=sha256:[0-9a-f]{64}$")
+
 if __name__=="__main__": unittest.main()
