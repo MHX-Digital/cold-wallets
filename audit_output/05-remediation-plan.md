@@ -1,5 +1,9 @@
 # Plano de remediação
 
+## C3
+
+P0: remover alcançabilidade de módulos secretos do Dashboard e estabelecer signer offline. P1: integrar PSBT, envelope ETH, transporte Tor fail-closed e idempotência persistente. P2: lockfile/hashes e migração de armazenamento. P3: UX guiada e governança.
+
 | ID | Prioridade | Problema | Correção proposta | Dependências | Risco da mudança | Testes | Critério de aceite |
 |---|---|---|---|---|---|---|---|
 | CW-001/002 | P0 | Dashboard recebe/gera/assina chaves | remover rotas secret-bearing e tornar coordinator watch-only | decisão de produto para xpub/descriptors | breaking change alto, segurança positiva | HTTP/route tests | nenhuma private key cruza API/DOM |

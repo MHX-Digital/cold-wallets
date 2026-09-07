@@ -1,5 +1,9 @@
 # Achados consolidados
 
+## Atualização C3
+
+Os achados permanecem abertos ou parcialmente mitigados; a documentação C3 não constitui verificação. Separação física do signer, PSBT, envelope Ethereum integrado, supply chain bloqueada e broadcaster idempotente seguem pendentes.
+
 ## Contagem
 
 | Severidade | Quantidade |
