@@ -6,6 +6,8 @@ Binds to 127.0.0.1:8080 only. Uses ThreadingHTTPServer for concurrency.
 """
 
 import json
+import hmac
+import secrets
 import socket
 import sys
 import subprocess
@@ -27,6 +29,9 @@ sys.path.insert(0, str(TOOLS_DIR))
 
 DASHBOARD_DIR = Path(__file__).parent
 PORT = 8888
+MAX_REQUEST_BODY = 64 * 1024
+REQUEST_TIMEOUT_SECONDS = 5
+SESSION_TOKEN = secrets.token_urlsafe(32)
 
 # Cache index.html in memory — it never changes at runtime
 _HTML_CACHE = None
@@ -35,7 +40,9 @@ _HTML_CACHE = None
 def _load_html():
     global _HTML_CACHE
     html_path = DASHBOARD_DIR / "index.html"
-    _HTML_CACHE = html_path.read_bytes()
+    template = html_path.read_text(encoding="utf-8")
+    _HTML_CACHE = template.replace(
+        "__SESSION_TOKEN__", SESSION_TOKEN).encode("utf-8")
 
 
 # --- Status cache (updated in background thread) ---
@@ -646,28 +653,40 @@ def api_tor_download(data):
 
 # --- Route table ---
 
+def api_key_operation_disabled(data):
+    """Fail closed until private-key operations move to an offline signer."""
+    return {
+        "error": (
+            "Disabled by security policy: the online dashboard is watch-only. "
+            "Use a separately reviewed offline signer workflow."
+        )
+    }
+
 API_ROUTES = {
     "/api/status": lambda d: get_system_status(),
-    "/api/generate-wallets": api_generate_wallets,
-    "/api/generate-disposable": api_generate_disposable,
-    "/api/disposable/list": api_disposable_list,
-    "/api/disposable/get-address": api_disposable_get,
+    "/api/generate-wallets": api_key_operation_disabled,
+    "/api/generate-disposable": api_key_operation_disabled,
+    "/api/disposable/list": api_key_operation_disabled,
+    "/api/disposable/get-address": api_key_operation_disabled,
     "/api/check-tor": lambda d: check_tor(),
     "/api/rpc/start": api_rpc_start,
     "/api/rpc/stop": api_rpc_stop,
     "/api/tor/start": api_tor_start,
     "/api/tor/stop": api_tor_stop,
     "/api/tor/download": api_tor_download,
-    "/api/prepare-btc": api_prepare_btc,
-    "/api/prepare-eth": api_prepare_eth,
-    "/api/send-btc": api_send_btc,
-    "/api/send-eth": api_send_eth,
+    "/api/prepare-btc": api_key_operation_disabled,
+    "/api/prepare-eth": api_key_operation_disabled,
+    "/api/send-btc": api_key_operation_disabled,
+    "/api/send-eth": api_key_operation_disabled,
 }
 
 
 # --- HTTP Handler ---
 
 class DashboardHandler(BaseHTTPRequestHandler):
+
+    server_version = "ColdWalletDashboard"
+    sys_version = ""
 
     def log_message(self, fmt, *args):
         if args and "/api/send" not in str(args[0]):
@@ -680,8 +699,35 @@ class DashboardHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", len(body))
         self.send_header("Cache-Control", "no-store")
+        self._send_security_headers()
         self.end_headers()
         self.wfile.write(body)
+
+    def _send_security_headers(self):
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("X-Frame-Options", "DENY")
+        self.send_header("Referrer-Policy", "no-referrer")
+        self.send_header(
+            "Content-Security-Policy",
+            "default-src 'none'; script-src 'unsafe-inline'; "
+            "style-src 'unsafe-inline'; img-src data:; connect-src 'self'; "
+            "base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+        )
+
+    def _valid_host(self):
+        port = self.server.server_address[1]
+        allowed = {f"127.0.0.1:{port}", f"localhost:{port}"}
+        return self.headers.get("Host", "").lower() in allowed
+
+    def _valid_origin(self):
+        origin = self.headers.get("Origin")
+        port = self.server.server_address[1]
+        allowed = {f"http://127.0.0.1:{port}", f"http://localhost:{port}"}
+        return origin is None or origin.lower() in allowed
+
+    def _valid_session_token(self):
+        supplied = self.headers.get("X-Session-Token", "")
+        return hmac.compare_digest(supplied, SESSION_TOKEN)
 
     def _serve_html(self):
         if _HTML_CACHE is None:
@@ -692,21 +738,22 @@ class DashboardHandler(BaseHTTPRequestHandler):
             "Content-Type", "text/html; charset=utf-8")
         self.send_header("Content-Length", len(_HTML_CACHE))
         self.send_header("Cache-Control", "no-store")
+        self._send_security_headers()
         self.end_headers()
         self.wfile.write(_HTML_CACHE)
 
     def do_GET(self):
-        if self.path == "/api/status":
-            self._send_json(get_system_status())
-        elif self.path == "/favicon.ico":
+        path = self.path.split("?", 1)[0]
+        if not self._valid_host():
+            self._send_json({"error": "Invalid Host"}, 403)
+        elif path == "/favicon.ico":
             self.send_response(204)
+            self._send_security_headers()
             self.end_headers()
-        elif self.path.startswith("/api/"):
-            self.send_error(404)
-        else:
-            # Serve dashboard on ANY non-API path
-            # (fixes MetaMask /login redirect loop)
+        elif path in ("/", "/index.html"):
             self._serve_html()
+        else:
+            self._send_json({"error": "Not found"}, 404)
 
     def do_POST(self):
         path = self.path.split("?")[0]
@@ -715,8 +762,30 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self._send_json({"error": "Not found"}, 404)
             return
 
+        if not self._valid_host():
+            self._send_json({"error": "Invalid Host"}, 403)
+            return
+        if not self._valid_origin():
+            self._send_json({"error": "Invalid Origin"}, 403)
+            return
+        if not self._valid_session_token():
+            self._send_json({"error": "Invalid session token"}, 403)
+            return
+        if self.headers.get("Transfer-Encoding"):
+            self._send_json({"error": "Transfer-Encoding not supported"}, 400)
+            return
+        if self.headers.get_content_type() != "application/json":
+            self._send_json({"error": "Content-Type must be application/json"}, 415)
+            return
+
         try:
-            length = int(self.headers.get("Content-Length", 0))
+            raw_length = self.headers.get("Content-Length")
+            if raw_length is None:
+                raise ValueError("missing Content-Length")
+            length = int(raw_length)
+            if length < 0 or length > MAX_REQUEST_BODY:
+                self._send_json({"error": "Request body too large"}, 413)
+                return
             body = self.rfile.read(length) if length else b"{}"
             data = json.loads(body) if body else {}
         except (json.JSONDecodeError, ValueError):
@@ -733,7 +802,17 @@ class DashboardHandler(BaseHTTPRequestHandler):
                     status = 400
             self._send_json(result, status)
         except Exception as e:
-            self._send_json({"error": str(e)}, 500)
+            print(f"[!] Request handler failed: {type(e).__name__}")
+            self._send_json({"error": "Internal server error"}, 500)
+
+    def do_OPTIONS(self):
+        self._send_json({"error": "Method not allowed"}, 405)
+
+    def do_PUT(self):
+        self._send_json({"error": "Method not allowed"}, 405)
+
+    def do_DELETE(self):
+        self._send_json({"error": "Method not allowed"}, 405)
 
 
 # --- Threading HTTP Server ---
@@ -741,6 +820,11 @@ class DashboardHandler(BaseHTTPRequestHandler):
 class ThreadedHTTPServer(HTTPServer):
     """Handle each request in a new thread"""
     allow_reuse_address = True
+
+    def get_request(self):
+        request, client_address = super().get_request()
+        request.settimeout(REQUEST_TIMEOUT_SECONDS)
+        return request, client_address
 
     def process_request(self, request, client_address):
         t = threading.Thread(

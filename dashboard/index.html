@@ -3,8 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="session-token" content="__SESSION_TOKEN__">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1f512;</text></svg>">
-<title>Cold Wallets</title>
+<title>Wallet Coordinator</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -141,7 +142,7 @@ label{font-size:9px;color:var(--text3);margin-bottom:3px;display:block;font-weig
 <div class="hdr">
   <div class="hdr-left">
     <div class="logo">CW</div>
-    <h1>Cold <b>Wallets</b></h1>
+    <h1>Wallet <b>Coordinator</b></h1>
   </div>
   <div class="hdr-right">
     <div class="pills" id="pills"></div>
@@ -177,19 +178,13 @@ label{font-size:9px;color:var(--text3);margin-bottom:3px;display:block;font-weig
     </div>
   </div>
 
-  <!-- GENERATE -->
+  <!-- OFFLINE SIGNER BOUNDARY -->
   <div class="cd">
     <div class="cd-h">
-      <div class="cd-h-left"><div class="cd-icon" style="background:rgba(167,139,250,.12);color:var(--purple)">G</div><h2>Generate Wallets</h2></div>
+      <div class="cd-h-left"><div class="cd-icon" style="background:rgba(167,139,250,.12);color:var(--purple)">!</div><h2>Offline signer required</h2></div>
     </div>
     <div class="cd-b">
-      <div class="fld">
-        <label>Count per crypto</label>
-        <select id="gen-n"><option>3</option><option>5</option><option>10</option></select>
-      </div>
-      <button class="bt bt-p bt-full" onclick="genWal(this)">Generate Cold Wallets</button>
-      <button class="bt bt-o bt-full hide" id="open-wallets" onclick="toggleSidebar()" style="margin-top:6px">View Generated Wallets</button>
-      <div id="gen-r"></div>
+      <div class="ms wn">This online dashboard is not a cold wallet. Key generation and signing are disabled. Use a separately reviewed offline signer.</div>
     </div>
   </div>
 
@@ -205,13 +200,7 @@ label{font-size:9px;color:var(--text3);margin-bottom:3px;display:block;font-weig
         <div class="st"><div class="n" id="df">0</div><div class="t">Funded</div></div>
         <div class="st"><div class="n" id="dp">0</div><div class="t">Spent</div></div>
       </div>
-      <div class="brow"><button class="bt bt-o bt-xs" onclick="genDisp('btc',10,this)">+10 BTC</button><button class="bt bt-o bt-xs" onclick="genDisp('eth',10,this)">+10 ETH</button><button class="bt bt-o bt-xs" onclick="genDisp('both',10,this)">+10 Both</button></div>
-      <div style="margin-top:8px">
-        <div class="tabs"><div class="tab on" onclick="dispList('active',this)">Active</div><div class="tab" onclick="dispList('funded',this)">Funded</div><div class="tab" onclick="dispList('unused',this)">Unused</div></div>
-        <div class="al" id="dl"><div style="padding:6px;color:var(--text3);font-size:10px">Click +10 above to generate a pool</div></div>
-      </div>
-      <div class="brow"><button class="bt bt-o bt-xs" onclick="dispGet('btc',this)">Get BTC</button><button class="bt bt-o bt-xs" onclick="dispGet('eth',this)">Get ETH</button></div>
-      <div id="dr"></div>
+      <div class="ms in">Watch-only counts. Creating or opening key-bearing pool files is disabled in the online coordinator.</div>
     </div>
   </div>
 
@@ -221,15 +210,7 @@ label{font-size:9px;color:var(--text3);margin-bottom:3px;display:block;font-weig
       <div class="cd-h-left"><div class="cd-icon" style="background:rgba(247,147,26,.12);color:#f59e0b">B</div><h2>Send Bitcoin</h2></div>
     </div>
     <div class="cd-b">
-      <div class="fld"><label>Private Key (WIF)</label><input type="password" id="bw" placeholder="5J... or K... or L..."></div>
-      <button class="bt bt-o bt-full" onclick="prepBtc(this)">Check Balance</button>
-      <div id="bi" class="hide" style="margin-top:10px">
-        <div id="bb"></div>
-        <div class="fld" style="margin-top:8px"><label>Destination</label><input id="bd" placeholder="bc1q... or 3... or 1..."></div>
-        <div class="fld"><label>Fee (sat/vB)</label><input type="number" id="bf" value="10"></div>
-        <button class="bt bt-d bt-full" onclick="sendBtc(this)">Sign &amp; Broadcast</button>
-      </div>
-      <div id="br"></div>
+      <div class="ms wn">Disabled: never paste a WIF into an online browser. A future coordinator must prepare PSBTs without private keys.</div>
     </div>
   </div>
 
@@ -239,14 +220,7 @@ label{font-size:9px;color:var(--text3);margin-bottom:3px;display:block;font-weig
       <div class="cd-h-left"><div class="cd-icon" style="background:rgba(98,126,234,.12);color:#818cf8">E</div><h2>Send Ethereum</h2></div>
     </div>
     <div class="cd-b">
-      <div class="fld"><label>Private Key (hex)</label><input type="password" id="ep" placeholder="0x..."></div>
-      <button class="bt bt-o bt-full" onclick="prepEth(this)">Check Balance</button>
-      <div id="ei" class="hide" style="margin-top:10px">
-        <div id="eb"></div>
-        <div class="fld" style="margin-top:8px"><label>Destination</label><input id="ed" placeholder="0x..."></div>
-        <button class="bt bt-d bt-full" onclick="sendEth(this)">Sign &amp; Broadcast (EIP-1559)</button>
-      </div>
-      <div id="er"></div>
+      <div class="ms wn">Disabled: never paste an Ethereum private key into an online browser. Signing belongs on a separate offline host.</div>
     </div>
   </div>
 
@@ -257,7 +231,8 @@ label{font-size:9px;color:var(--text3);margin-bottom:3px;display:block;font-weig
     </div>
     <div class="cd-b" id="rpc"><div style="color:var(--text3);font-size:11px">Loading...</div></div>
     <div id="rpc-ctl" class="hide" style="padding:0 14px 10px">
-      <div class="brow" style="margin:0"><button class="bt bt-g bt-xs" onclick="rpcAct('start',this)">Start RPC</button><button class="bt bt-o bt-xs" onclick="rpcAct('stop',this)">Stop</button></div>
+      <div class="brow" style="margin:0"><button class="bt bt-g bt-xs" onclick="rpcAct('start',this)">Start unverified RPC</button><button class="bt bt-o bt-xs" onclick="rpcAct('stop',this)">Stop</button></div>
+      <div class="ms wn">Public RPC over Tor. Transport privacy only; responses are not verified by Helios.</div>
       <div id="rpc-msg"></div>
     </div>
   </div>
@@ -268,7 +243,7 @@ label{font-size:9px;color:var(--text3);margin-bottom:3px;display:block;font-weig
 (function(){
 "use strict";
 
-function callApi(ep,d){d=d||{};var c=new AbortController();var t=setTimeout(function(){c.abort();},30000);return fetch('/api/'+ep,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d),signal:c.signal}).then(function(r){return r.json();}).finally(function(){clearTimeout(t);});}
+function callApi(ep,d){d=d||{};var c=new AbortController();var t=setTimeout(function(){c.abort();},30000);var token=document.querySelector('meta[name="session-token"]').content;return fetch('/api/'+ep,{method:'POST',headers:{'Content-Type':'application/json','X-Session-Token':token},body:JSON.stringify(d),signal:c.signal}).then(function(r){return r.json();}).finally(function(){clearTimeout(t);});}
 function el(id){return document.getElementById(id);}
 function esc(s){if(!s)return'';var d=document.createElement('div');d.textContent=String(s);return d.innerHTML;}
 function setMsg(id,t,c){c=c||'in';el(id).innerHTML='<div class="ms '+c+'">'+t+'</div>';}
@@ -363,7 +338,7 @@ window.prepBtc=prepBtc;window.sendBtc=sendBtc;window.prepEth=prepEth;window.send
 var _busy=false;
 async function autoRefresh(){if(_busy)return;_busy=true;try{await loadSt();}finally{_busy=false;}}
 window.autoRefresh=autoRefresh;
-autoRefresh();dispList('active',document.querySelector('.tab.on'));
+autoRefresh();
 setTimeout(autoRefresh,3000);setTimeout(autoRefresh,8000);setInterval(autoRefresh,20000);
 document.addEventListener('keydown',function(e){if(e.key==='Escape'&&_sbOpen)toggleSidebar();});
 })();
