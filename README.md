@@ -22,9 +22,10 @@ offline signer -> signed artifact -> online validator/broadcaster
   shipped in `embit` has not been independently reproduced or approved.
 - P2PKH, wrapped SegWit, Taproot, multisig, PSBT v2, arbitrary scripts,
   alternate sighashes, change outputs, and production testnet are unsupported.
-- Legacy combined key-generation/sign/send implementations were removed. A
-  protected historical RPC configuration subtree remains outside the supported
-  product until its directory ownership is corrected and its files are deleted.
+- Legacy combined key-generation/sign/send implementations and executable RPC,
+  Tor, Helios, VPN, reverse-proxy and L2 configurations were removed. The RPC
+  tree now contains only disabled, non-executable evidence contracts for future
+  operational validation.
 
 ## Start the watch-only Dashboard
 
@@ -67,6 +68,9 @@ install dependencies automatically.
 
 No Helios or Tor service is started by the Dashboard. No flow is described as
 trustless merely because it uses Tor or localhost.
+
+The descriptors under `rpc/` are deliberately `UNATTESTED` and `enabled:false`.
+They do not contain a runnable image, Tor configuration, checkpoint or upstream.
 
 ## Tests
 
