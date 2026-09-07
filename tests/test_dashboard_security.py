@@ -1,4 +1,5 @@
 import json
+import ast
 import tempfile
 import threading
 import time
@@ -135,9 +136,40 @@ class DashboardSecurityTests(unittest.TestCase):
         status, _, body = self.request(
             "/api/send-btc", method="POST", body=payload,
             headers=self.json_headers())
-        self.assertEqual(status, 400)
-        self.assertIn(b"Disabled by security policy", body)
+        self.assertEqual(status, 404)
         self.assertNotIn(b"test-sentinel", body)
+
+        payload = json.dumps({"private_key": "test-sentinel"}).encode()
+        status, _, body = self.request(
+            "/api/status", method="POST", body=payload,
+            headers=self.json_headers())
+        self.assertEqual(status, 400)
+        self.assertNotIn(b"test-sentinel", body)
+
+    def test_dashboard_import_boundary(self):
+        source = Path(dashboard.__file__).read_text(encoding="utf-8")
+        tree = ast.parse(source)
+        imported = {
+            alias.name.split(".")[0]
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Import)
+            for alias in node.names
+        }
+        imported.update(
+            node.module.split(".")[0]
+            for node in ast.walk(tree)
+            if isinstance(node, ast.ImportFrom) and node.module
+        )
+        forbidden = {"signer", "cold_wallets", "requests", "socket", "subprocess"}
+        self.assertFalse(imported & forbidden)
+        self.assertFalse(hasattr(dashboard, "COLD_WALLETS"))
+        self.assertEqual(set(dashboard.API_ROUTES), {"/api/status"})
+
+    def test_frontend_has_no_secret_controls_or_legacy_calls(self):
+        html = dashboard._HTML_CACHE.lower()
+        for marker in (b"private_key", b"sign-eth", b"sign-btc",
+                       b"send-eth", b"send-btc", b"generate-wallets"):
+            self.assertNotIn(marker, html)
 
     def test_unsupported_method_is_rejected(self):
         status, _, _ = self.request(
