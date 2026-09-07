@@ -1,6 +1,6 @@
 import unittest
 from signer.bitcoin_psbt import PsbtError, inspect_psbt, sign_psbt
-from signer.psbt_backend import diagnose
+from bitcoin_backend import diagnose
 
 class PsbtTests(unittest.TestCase):
     @classmethod

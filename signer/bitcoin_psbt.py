@@ -1,7 +1,7 @@
 """Strict offline PSBT v0 boundary backed by embit; no network capability."""
 from __future__ import annotations
 from coordinator.bitcoin_psbt import PsbtError, inspect_psbt
-from signer.psbt_backend import BackendPolicyError, require_approved
+from bitcoin_backend import BackendPolicyError,require_approved
 
 def _lib():
     try:
