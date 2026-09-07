@@ -57,3 +57,14 @@ P0: instalar somente após aprovação a dependência Ethereum pinada e executar
 ## Pendências após C5
 
 P0: ampliar PSBT para vetores oficiais, P2PKH/P2SH-P2WPKH e validação independente. P1: broadcaster Ethereum, scripts Batch/PowerShell Tor e attestation Helios. P2: integrar stores novos, formato autenticado de migração e locks Windows/Python adicionais. P3: testes operacionais air-gap/backup.
+
+## Pendências após C6
+
+| ID | Prioridade | Problema restante | Próxima correção | Dependências | Risco | Teste | Critério de aceite |
+|---|---|---|---|---|---|---|---|
+| CW-004/009 | P0 | backend nativo embit não reproduzido/aprovado | reproduzir libsecp256k1 de fonte fixada ou substituir por backend auditado; manter bloqueio até lá | build Bitcoin independente | alto | BIP174 + Bitcoin Core regtest | diagnóstico `approved`, hash allowlisted e vetores externos passam |
+| CW-005/016 | P0 | verdade remota e Helios não atestado | executar attestation completa e divergência multi-backend fail-closed | Helios controlado | alto | checkpoint/chain/digest/route | oito evidências presentes e coerentes |
+| CW-006/010/017 | P0 | scripts e módulos legados somente leitura | corrigir ownership de forma operacional aprovada; remover do Git e substituir por comandos novos | ação do mantenedor | médio | AST + busca + execução fail-closed | zero import legado, download, rede direta ou autoelevação alcançável |
+| CW-011/012 | P1 | host offline e storage legado | CLI signer de processo único, formato autenticado e validação Windows offline | Windows isolado | alto | interrupção/recovery/canários | chave nunca cruza host online; recovery comprovado |
+| CW-019 | P1 | locks Windows ausentes | gerar/verificar em Windows x86-64 CPython 3.10/3.12/3.14 | runners Windows | médio | clean-room hash install | lock por alvo, backend registrado, suíte completa |
+| CW-020 | P2 | backup/restore | teste de restauração sintética e runbook operacional | decisão de custódia | médio | restore em mídia temporária | recuperação íntegra sem logs/segredos residuais |

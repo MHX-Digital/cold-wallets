@@ -107,3 +107,33 @@ Todos os demais findings permanecem abertos. “Contido” não equivale a corre
 | CW-020 | OPEN | OPEN | backup/recovery real pendente |
 | CW-021 | ACCEPTED TEMPORARILY | ACCEPTED TEMPORARILY | bind IPv4 loopback |
 | CW-022 | VERIFIED | VERIFIED | Gate C5 estável |
+
+## Estado C6
+
+Os níveis de severidade originais não foram reduzidos. `VERIFIED` abaixo significa
+que a barreira citada possui teste; não significa que o produto está liberado.
+
+| ID | Estado C5 | Estado C6 | Evidência C6 |
+|---|---|---|---|
+| CW-001 | VERIFIED | VERIFIED | árvore transitiva do Dashboard não alcança signer/legado; serviço coordinator watch-only |
+| CW-002 | VERIFIED no Dashboard | VERIFIED no Dashboard | regressão HTTP, API permanece status-only e broadcast normal desabilitado |
+| CW-003 | VERIFIED | VERIFIED | vetores Base58Check/Bech32(m) preservados |
+| CW-004 | PARTIAL | PARTIAL | PSBT v0 mainnet P2WPKH valida prevouts completos e consistentes; assinatura bloqueada por backend não aprovado |
+| CW-005 | VERIFIED no signer | PARTIAL | signer e broadcaster validam a tx real contra envelope; dados de proposta de RPC público continuam não verificados |
+| CW-006 | PARTIAL | PARTIAL | launcher primário não eleva/instala/baixa; downloader Tor e instaladores legados permanecem |
+| CW-007 | PARTIAL | PARTIAL | README/UI corrigidos; documentação RPC histórica ainda requer saneamento |
+| CW-008 | VERIFIED no Dashboard | VERIFIED no Dashboard | UI sem segredos/raw tx e apenas `textContent` para status |
+| CW-009 | PARTIAL | PARTIAL | um output, fee positiva/absoluta/rate e prevouts P2WPKH; validação independente/regtest pendente |
+| CW-010 | VERIFIED no signer | PARTIAL | fluxo novo é apenas type 2; cliente legado combinado ainda está fisicamente presente |
+| CW-011 | PARTIAL | PARTIAL | nenhum segredo nos stores novos; migração autenticada/ACL Windows pendente |
+| CW-012 | PARTIAL | PARTIAL | fronteira de imports sem rede verificada; host air-gapped não validado |
+| CW-013 | VERIFIED na camada nova | VERIFIED E INTEGRADO | coordinator consome reserva/transições SQLite; concorrência, restart e idempotência testados |
+| CW-014 | VERIFIED | VERIFIED | broadcaster Ethereum usa hash real, unique key, estado incerto, reconciliação, restart e concorrência |
+| CW-015 | PARTIAL | PARTIAL | erros novos são de domínio/redigidos; legado ainda imprime exceções/dados |
+| CW-016 | PARTIAL | PARTIAL | enum explícito e attestation exige oito evidências; Helios real não foi atestado |
+| CW-017 | VERIFIED Python / scripts pendentes | PARTIAL | três entrypoints Python de rede legados abortam antes de imports; scripts Batch/PS permanecem |
+| CW-018 | VERIFIED | VERIFIED | regressão de rotas/headers/métodos |
+| CW-019 | VERIFIED Linux 3.12 | PARTIAL | Linux 3.12 reproduzido; automação Windows criada, locks Windows não alegados |
+| CW-020 | OPEN | OPEN | restore real não executado |
+| CW-021 | ACCEPTED TEMPORARILY | ACCEPTED TEMPORARILY | somente loopback IPv4 documentado |
+| CW-022 | VERIFIED | VERIFIED | Gate C6 estável; commits locais isolados |
