@@ -4,6 +4,7 @@ from __future__ import annotations
 import hmac, json, secrets, threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
+from coordinator.service import public_capabilities
 
 DASHBOARD_DIR=Path(__file__).resolve().parent
 PORT=8888
@@ -23,7 +24,9 @@ def _contains_secret_field(value):
     return isinstance(value,list) and any(_contains_secret_field(v) for v in value)
 
 def get_system_status():
-    return {"role":"online-watch-only-coordinator","signing":False,"key_storage":False,"network_status":"not-verified","rpc_status":"not-verified"}
+    status=public_capabilities()
+    status.update({"signing":False,"key_storage":False,"network_status":"not-verified"})
+    return status
 
 API_ROUTES={"/api/status":lambda _data:get_system_status()}
 

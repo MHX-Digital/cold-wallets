@@ -7,8 +7,8 @@
 </head><body>
 <h1>Online watch-only coordinator</h1>
 <p class="warning">This browser interface is not a cold wallet and cannot create, import, store, or use signing credentials.</p>
-<p><span class="tag">ONLINE</span><span class="tag">WATCH-ONLY</span><span class="tag">RPC NOT VERIFIED</span></p>
-<section><h2>Safe workflow</h2><ol><li>Prepare and review a proposal online.</li><li>Export it through controlled artifact transfer.</li><li>Sign on a separate offline host.</li><li>Import and validate the signed artifact.</li><li>Broadcast through the Tor-only broadcaster.</li></ol></section>
+<p><span class="tag">ONLINE</span><span class="tag">WATCH-ONLY</span><span class="tag">PUBLIC RPC — UNVERIFIED</span><span class="tag">REAL BROADCAST DISABLED</span></p>
+<section><h2>Safe workflow</h2><ol><li><strong>Prepare</strong> a proposal online.</li><li><strong>Review</strong> network, destination, value, maximum fee, proposal hash, and risk.</li><li><strong>Export</strong> the versioned artifact.</li><li><strong>Sign offline</strong> on a separate host after independent review.</li><li><strong>Import</strong> the signed artifact.</li><li><strong>Validate</strong> signature and proposal binding.</li><li><strong>Transmit</strong> only after the controlled-validation gate is enabled.</li><li><strong>Track</strong> the persistent broadcast state.</li></ol><p>Current next step: use the coordinator CLI/service contracts. The browser intentionally has no signing or live-transmit control.</p></section>
 <section><h2>Component status</h2><pre id="status">Loading…</pre></section>
 <script>
 const token=document.querySelector('meta[name="session-token"]').content;
