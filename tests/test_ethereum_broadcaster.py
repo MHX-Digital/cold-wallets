@@ -50,6 +50,10 @@ class EthereumBroadcasterTests(unittest.TestCase):
     def test_mutation_chain_and_remote_hash_mismatch_fail_closed(self):
         mutated=dict(self.envelope); mutated["to"]="0x"+"33"*20; mutated["proposalId"]=proposal_id(mutated)
         with self.assertRaises(EthereumBroadcastError): self.service(FakeRpc()).submit(self.signed,mutated,now=2)
+        malformed=dict(self.signed); malformed["rawTransaction"]="0x02ff"
+        with self.assertRaises(EthereumBroadcastError): self.service(FakeRpc()).submit(malformed,self.envelope,now=2)
+        wrong_chain=dict(self.signed); wrong_chain["chainId"]="2"
+        with self.assertRaises(EthereumBroadcastError): self.service(FakeRpc()).submit(wrong_chain,self.envelope,now=2)
         self.assertEqual(self.service(FakeRpc({"transactionHash":"0x"+"00"*32})).submit(self.signed,self.envelope,now=2),"FAILED_TERMINAL")
     def test_replaced_dropped_reverted_and_reorg_states(self):
         for receipt,expected in (({"replaced":True},"REPLACED"),({"dropped":True},"DROPPED"),({"status":0},"FAILED_TERMINAL")):

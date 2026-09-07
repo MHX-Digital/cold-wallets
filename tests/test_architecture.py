@@ -8,12 +8,40 @@ def imports(path):
         elif isinstance(node,ast.ImportFrom) and node.module: result.add(node.module.split('.')[0])
     return result
 
+def local_dependencies(path):
+    tree=ast.parse(path.read_text(encoding="utf-8")); result=set()
+    for node in ast.walk(tree):
+        module=None
+        if isinstance(node,ast.ImportFrom): module=node.module
+        elif isinstance(node,ast.Import):
+            for alias in node.names:
+                candidate=Path(*alias.name.split(".")); file=candidate.with_suffix(".py")
+                if file.exists(): result.add(file)
+        if module:
+            candidate=Path(*module.split(".")); file=candidate.with_suffix(".py")
+            if file.exists(): result.add(file)
+    return result
+
+def reachable(start):
+    pending=[Path(start)]; seen=set()
+    while pending:
+        path=pending.pop()
+        if path in seen: continue
+        seen.add(path); pending.extend(local_dependencies(path)-seen)
+    return seen
+
 class ArchitectureTests(unittest.TestCase):
     def test_trust_boundaries(self):
         self.assertFalse(imports(Path("dashboard/server.py")) & {"signer","cold_wallets","requests","socket","subprocess"})
         self.assertFalse(imports(Path("signer/ethereum.py")) & {"requests","socket","urllib","dashboard","broadcaster","transport"})
         self.assertFalse(imports(Path("broadcaster/store.py")) & {"signer","cold_wallets","eth_account","bit"})
         self.assertNotIn("signer",imports(Path("coordinator/eth_envelope.py")))
+        dashboard_tree=reachable("dashboard/server.py")
+        self.assertFalse(any(path.parts[0] in {"signer","cold_wallets"} for path in dashboard_tree))
+        for path in Path("signer").glob("*.py"):
+            self.assertFalse(imports(path) & {"requests","socket","urllib","dashboard","broadcaster","transport"},str(path))
+        for path in Path("broadcaster").glob("*.py"):
+            self.assertFalse(imports(path) & {"signer","cold_wallets"},str(path))
     def test_runtime_install_and_tor_download_are_blocked(self):
         launcher=Path("start.bat").read_text(encoding="utf-8").casefold()
         self.assertNotIn("-m pip install",launcher)

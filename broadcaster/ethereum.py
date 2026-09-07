@@ -31,6 +31,7 @@ def decode_signed(payload: dict, envelope: dict, policy: EthereumBroadcastPolicy
     if not isinstance(payload,dict) or set(payload)!=required: raise EthereumBroadcastError("signed artifact fields mismatch")
     validate(envelope,now=now)
     if payload["schema"]!="cold-wallets.eth-signed" or payload["version"]!=1: raise EthereumBroadcastError("unsupported signed artifact")
+    if payload["chainId"]!=envelope["chainId"]: raise EthereumBroadcastError("signed artifact chain mismatch")
     if payload["proposalId"]!=envelope["proposalId"] or payload["envelopeHash"]!=envelope["proposalId"]: raise EthereumBroadcastError("proposal binding mismatch")
     raw_hex=payload["rawTransaction"]
     if not isinstance(raw_hex,str) or not raw_hex.startswith("0x"): raise EthereumBroadcastError("invalid raw transaction")
@@ -42,14 +43,14 @@ def decode_signed(payload: dict, envelope: dict, policy: EthereumBroadcastPolicy
         from hexbytes import HexBytes
         decoded=TypedTransaction.from_bytes(HexBytes(raw)).as_dict()
         recovered=Account.recover_transaction(raw)
-    except (ImportError,ValueError,TypeError) as exc: raise EthereumBroadcastError("invalid signed transaction") from exc
+    except Exception as exc: raise EthereumBroadcastError("invalid signed transaction") from exc
     transaction_hash="0x"+keccak(raw).hex()
     expected_to="0x"+bytes(decoded["to"]).hex()
     expected={"type":2,"chainId":int(envelope["chainId"]),"nonce":int(envelope["nonce"]),"value":int(envelope["valueWei"]),"gas":int(envelope["gasLimit"]),"maxFeePerGas":int(envelope["maxFeePerGasWei"]),"maxPriorityFeePerGas":int(envelope["maxPriorityFeePerGasWei"])}
     if any(decoded.get(key)!=value for key,value in expected.items()): raise EthereumBroadcastError("signed transaction differs from proposal")
     if expected_to.casefold()!=envelope["to"].casefold() or bytes(decoded["data"])!=bytes.fromhex(envelope["data"][2:]): raise EthereumBroadcastError("signed destination or calldata differs")
-    if recovered.casefold()!=envelope["from"].casefold() or payload["recoveredAddress"].casefold()!=recovered.casefold(): raise EthereumBroadcastError("sender recovery mismatch")
-    if payload["transactionHash"].casefold()!=transaction_hash.casefold(): raise EthereumBroadcastError("transaction hash mismatch")
+    if not isinstance(payload["recoveredAddress"],str) or recovered.casefold()!=envelope["from"].casefold() or payload["recoveredAddress"].casefold()!=recovered.casefold(): raise EthereumBroadcastError("sender recovery mismatch")
+    if not isinstance(payload["transactionHash"],str) or payload["transactionHash"].casefold()!=transaction_hash.casefold(): raise EthereumBroadcastError("transaction hash mismatch")
     if expected["chainId"]!=policy.chain_id: raise EthereumBroadcastError("chain ID rejected")
     total=expected["value"]+expected["gas"]*expected["maxFeePerGas"]
     if expected["gas"]>policy.max_gas_limit or expected["maxFeePerGas"]>policy.max_fee_per_gas or total>policy.max_total_cost: raise EthereumBroadcastError("transaction policy exceeded")
