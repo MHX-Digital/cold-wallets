@@ -9,6 +9,25 @@ class CryptoBackend(Protocol):
     def address_for_key(self,key: str)->str: ...
     def sign_type2(self,transaction: dict,key: str)->tuple[str,str,str]: ...
 
+class EthAccountBackend:
+    """Local eth-account adapter; import is lazy and never performs I/O."""
+    @staticmethod
+    def _account():
+        try:
+            from eth_account import Account
+        except ImportError as exc:
+            raise SigningError("reviewed eth-account dependency is unavailable") from exc
+        return Account
+    def address_for_key(self,key: str)->str:
+        return self._account().from_key(key).address
+    def sign_type2(self,transaction: dict,key: str)->tuple[str,str,str]:
+        account=self._account(); signed=account.sign_transaction(transaction,key)
+        raw_bytes=getattr(signed,"raw_transaction",getattr(signed,"rawTransaction",None))
+        if raw_bytes is None: raise SigningError("signing backend returned no transaction")
+        raw="0x"+bytes(raw_bytes).hex()
+        tx_hash="0x"+bytes(signed.hash).hex()
+        return raw,tx_hash,account.recover_transaction(raw)
+
 @dataclass(frozen=True)
 class SigningPolicy:
     chain_id: int=1

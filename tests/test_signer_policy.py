@@ -1,7 +1,7 @@
 import ast, unittest
 from pathlib import Path
 from coordinator.eth_envelope import proposal_id
-from signer.ethereum import SigningError, SigningPolicy, independent_summary, sign
+from signer.ethereum import EthAccountBackend, SigningError, SigningPolicy, independent_summary, sign
 
 class Backend:
     address="0x"+"11"*20
@@ -30,5 +30,8 @@ class SignerTests(unittest.TestCase):
         names={a.name.split('.')[0] for n in ast.walk(tree) if isinstance(n,ast.Import) for a in n.names}
         names|={n.module.split('.')[0] for n in ast.walk(tree) if isinstance(n,ast.ImportFrom) and n.module}
         self.assertFalse(names & {"requests","socket","urllib","dashboard","broadcaster","transport"})
+
+    def test_missing_crypto_dependency_fails_closed(self):
+        with self.assertRaises(SigningError): EthAccountBackend().address_for_key("ephemeral-not-a-key")
 
 if __name__=="__main__": unittest.main()
