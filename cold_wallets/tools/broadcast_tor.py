@@ -21,13 +21,8 @@ import sys
 import json
 from datetime import datetime
 from pathlib import Path
-
-try:
-    import requests
-except ImportError:
-    print("ERRO: requests nao instalado!")
-    print("Execute: pip install requests[socks] PySocks")
-    sys.exit(1)
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from transport.requests_client import build_verified_tor_client
 
 
 # Configuracoes do Tor
@@ -79,52 +74,17 @@ ETHEREUM_BROADCAST_APIS = [
 def check_tor_connection(proxy):
     """Verifica se a conexao Tor esta funcionando"""
     try:
-        session = requests.Session()
-        session.proxies = {
-            'http': proxy,
-            'https': proxy
-        }
-
-        # Verifica IP via Tor
-        response = session.get('https://check.torproject.org/api/ip', timeout=30)
-        data = response.json()
-
-        if data.get('IsTor'):
-            print("[+] Conectado ao Tor!")
-            print(f"    IP de saida: {data.get('IP')}")
-            return True
-        else:
-            print("[-] Conectado, mas NAO via Tor!")
-            return False
+        build_verified_tor_client(ports=(int(proxy.rsplit(':',1)[1]),))
+        return True
 
     except Exception:
         return False
 
 
 def get_tor_session():
-    """Retorna uma sessao requests configurada para usar Tor"""
-    session = requests.Session()
-
-    # Tenta primeiro o Tor Browser (9150)
-    print("[*] Tentando conectar ao Tor Browser (porta 9150)...")
-    if check_tor_connection(TOR_PROXY_BROWSER):
-        session.proxies = {
-            'http': TOR_PROXY_BROWSER,
-            'https': TOR_PROXY_BROWSER
-        }
-        return session
-
-    # Tenta o Tor Daemon (9050)
-    print("[*] Tentando conectar ao Tor Daemon (porta 9050)...")
-    if check_tor_connection(TOR_PROXY_DAEMON):
-        session.proxies = {
-            'http': TOR_PROXY_DAEMON,
-            'https': TOR_PROXY_DAEMON
-        }
-        return session
-
-    return None
-
+    """Return the central fail-closed Tor client."""
+    try: return build_verified_tor_client()
+    except Exception: return None
 
 def broadcast_bitcoin(session, raw_tx):
     """Envia transacao Bitcoin para a rede"""

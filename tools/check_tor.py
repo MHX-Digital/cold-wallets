@@ -6,13 +6,9 @@ Nunca expoe o IP real — toda verificacao passa pelo proxy Tor.
 """
 
 import sys
-
-try:
-    import requests
-except ImportError:
-    print("ERRO: requests nao instalado!")
-    print("Execute: pip install requests[socks] PySocks")
-    sys.exit(1)
+from pathlib import Path
+sys.path.insert(0,str(Path(__file__).parent.parent))
+from transport.requests_client import build_verified_tor_client
 
 
 def check_tor():
@@ -27,12 +23,9 @@ def check_tor():
         print(f"[*] Testando {name}...")
 
         try:
-            session = requests.Session()
-            session.proxies = {'http': proxy, 'https': proxy}
-
-            response = session.get(
-                'https://check.torproject.org/api/ip', timeout=15
-            )
+            port=int(proxy.rsplit(':',1)[1])
+            session=build_verified_tor_client(ports=(port,))
+            response=session.get('https://check.torproject.org/api/ip')
             data = response.json()
 
             if data.get('IsTor'):
@@ -43,10 +36,8 @@ def check_tor():
             else:
                 print("    [!] Conectado mas NAO via Tor")
 
-        except requests.exceptions.ConnectionError:
-            print("    [-] Nao conectado (porta fechada)")
-        except Exception as e:
-            print(f"    [-] Erro: {e}")
+        except Exception:
+            print("    [-] Tor indisponivel ou verificacao falhou")
 
     print("\n[!] NENHUMA CONEXAO TOR ENCONTRADA!")
     print("\n    Solucoes:")

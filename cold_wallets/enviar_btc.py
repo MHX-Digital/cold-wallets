@@ -16,9 +16,9 @@ from decimal import Decimal
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 try:
-    import requests
     from bit import Key
     from bit.network.meta import Unspent
 except ImportError:
@@ -29,6 +29,7 @@ except ImportError:
 
 from network_control import OfflineContext, require_admin, is_online
 from address_validation import validate_btc_address
+from transport.requests_client import build_verified_tor_client
 
 
 # Configuracao Tor
@@ -67,21 +68,9 @@ def estimate_tx_vsize(n_inputs, input_type, dest_address):
 
 
 def get_tor_session():
-    """Conecta ao Tor"""
-    session = requests.Session()
-
-    for proxy in TOR_PROXIES:
-        try:
-            session.proxies = proxy
-            r = session.get("https://check.torproject.org/api/ip", timeout=15)
-            if r.json().get("IsTor"):
-                print(f"[+] Conectado ao Tor - IP: {r.json().get('IP')}")
-                return session
-        except Exception as e:
-            print(f"    [-] Tor proxy falhou: {e}")
-            continue
-
-    return None
+    """Return the central fail-closed Tor client."""
+    try: return build_verified_tor_client()
+    except Exception: return None
 
 
 def fetch_utxos(session, address):

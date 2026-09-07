@@ -14,13 +14,10 @@ import json
 import sys
 import time
 from http.server import HTTPServer, BaseHTTPRequestHandler
+from pathlib import Path
 
-try:
-    import requests
-except ImportError:
-    print("ERRO: requests nao instalado!")
-    print("Execute: pip install requests[socks] PySocks")
-    sys.exit(1)
+sys.path.insert(0,str(Path(__file__).parent.parent))
+from transport.requests_client import build_verified_tor_client
 
 
 # Configuracao
@@ -62,21 +59,12 @@ def get_tor_session():
         return tor_session
 
     tor_session = None
-    session = requests.Session()
-
-    for proxy in TOR_PROXIES:
-        try:
-            session.proxies = {'http': proxy, 'https': proxy}
-            # Testa conexao
-            response = session.get('https://check.torproject.org/api/ip', timeout=10)
-            if response.json().get('IsTor'):
-                print(f"[+] Conectado ao Tor via {proxy}")
-                print(f"    IP de saida: {response.json().get('IP')}")
-                tor_session = session
-                tor_session_created = time.time()
-                return session
-        except Exception:
-            continue
+    try:
+        tor_session=build_verified_tor_client()
+        tor_session_created=time.time()
+        return tor_session
+    except Exception:
+        pass
 
     print("[!] ERRO: Nao foi possivel conectar ao Tor!")
     print("    Abra o Tor Browser ou inicie o Tor daemon")

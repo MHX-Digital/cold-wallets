@@ -20,4 +20,13 @@ class ArchitectureTests(unittest.TestCase):
         tor=Path("tools/tor_manager.py").read_text(encoding="utf-8")
         self.assertNotIn("requests.get",tor); self.assertNotIn("extractall",tor)
 
+    def test_python_http_clients_use_central_allowlist(self):
+        allow={Path("transport/requests_client.py")}
+        offenders=[]
+        for path in Path(".").rglob("*.py"):
+            if path.parts[0] in {"tests","audit_output"} or path in allow: continue
+            names=imports(path)
+            if names & {"requests","urllib3","httpx","aiohttp"}: offenders.append(str(path))
+        self.assertEqual(offenders,[])
+
 if __name__=="__main__": unittest.main()

@@ -37,6 +37,8 @@ class TorHttpClient:
                 return response
             except TimeoutError as exc: last=TorTimeoutError("Tor request timed out")
         raise last or TorTransportError("Tor request failed closed")
+    def get(self,url: str,**kwargs): return self.request("GET",url,**kwargs)
+    def post(self,url: str,**kwargs): return self.request("POST",url,**kwargs)
 
 def redact_url(url: str) -> str:
     parts=urlsplit(url)

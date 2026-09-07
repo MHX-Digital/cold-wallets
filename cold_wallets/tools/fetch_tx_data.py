@@ -17,14 +17,8 @@ from decimal import Decimal
 from datetime import datetime
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-try:
-    import requests
-except ImportError:
-    print("ERRO: requests nao instalado!")
-    print("Execute: pip install requests[socks] PySocks")
-    sys.exit(1)
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from transport.requests_client import build_verified_tor_client
 
 
 TOR_PROXY_BROWSER = "socks5h://127.0.0.1:9150"
@@ -32,21 +26,9 @@ TOR_PROXY_DAEMON = "socks5h://127.0.0.1:9050"
 
 
 def get_tor_session():
-    """Retorna uma sessao requests configurada para usar Tor"""
-    session = requests.Session()
-
-    for proxy in [TOR_PROXY_BROWSER, TOR_PROXY_DAEMON]:
-        try:
-            session.proxies = {'http': proxy, 'https': proxy}
-            response = session.get('https://check.torproject.org/api/ip', timeout=30)
-            if response.json().get('IsTor'):
-                print(f"[+] Conectado ao Tor! IP: {response.json().get('IP')}")
-                return session
-        except Exception as e:
-            print(f"    [-] Tor proxy falhou: {e}")
-            continue
-
-    return None
+    """Return the central fail-closed Tor client."""
+    try: return build_verified_tor_client()
+    except Exception: return None
 
 
 def fetch_bitcoin_utxos(session, address):
