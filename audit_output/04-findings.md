@@ -193,3 +193,30 @@ que a barreira citada possui teste; não significa que o produto está liberado.
 | CW-020 | PARTIAL | VERIFIED COM FIXTURES | backup/checksum/restore autenticado real e falhas adversariais testados |
 | CW-021 | ACCEPTED TEMPORARILY | ACCEPTED TEMPORARILY | IPv4 loopback permanece explícito |
 | CW-022 | PARTIAL | PARTIAL | Git cria commits e `fsck` passa; raiz/`.git` ainda têm ownership misto |
+
+## Estado C7.2
+
+| ID | Estado C7.1 | Estado C7.2 | Evidência C7.2 |
+|---|---|---|---|
+| CW-001 | VERIFIED | VERIFIED | separação Dashboard/signer e ausência física dos entrypoints preservadas |
+| CW-002 | VERIFIED | VERIFIED | regressão API integral |
+| CW-003 | VERIFIED | VERIFIED | vetores BTC preservados |
+| CW-004 | PARTIAL | PARTIAL | PSBT revisável, signing bloqueado por backend não aprovado |
+| CW-005 | PARTIAL | PARTIAL | assinatura real vinculada; RPC ainda não atestado |
+| CW-006 | PARTIAL | VERIFIED | instaladores, downloaders e configurações executáveis inseguras removidos |
+| CW-007 | PARTIAL | VERIFIED | documentos históricos removidos; README/RPC distinguem estados reais |
+| CW-008 | VERIFIED | VERIFIED | ausência de segredo no Dashboard preservada |
+| CW-009 | PARTIAL | PARTIAL | política estreita; Bitcoin Core regtest pendente |
+| CW-010 | VERIFIED | VERIFIED | somente fluxo type 2 offline alcançável |
+| CW-011 | VERIFIED NO FORMATO ATUAL | VERIFIED NO FORMATO ATUAL | testes reais AES-GCM/scrypt preservados |
+| CW-012 | PARTIAL | PARTIAL | automação insegura ausente; Windows/air gap pendentes |
+| CW-013 | VERIFIED | VERIFIED | store transacional preservado |
+| CW-014 | VERIFIED LOCALMENTE | VERIFIED LOCALMENTE | idempotência local; remoto desabilitado |
+| CW-015 | VERIFIED NO FLUXO ALCANÇÁVEL | VERIFIED NO FLUXO ALCANÇÁVEL | legado removido e respostas redigidas |
+| CW-016 | PARTIAL | PARTIAL | contrato exige oito evidências e permanece UNATTESTED |
+| CW-017 | PARTIAL | VERIFIED ESTATICAMENTE | zero cliente/script/config ativo fora do adapter; Tor descriptor disabled/fail-closed |
+| CW-018 | VERIFIED | VERIFIED | regressão web integral |
+| CW-019 | VERIFIED LINUX 3.12 | VERIFIED LINUX 3.12 | instalação offline hash-locked reproduzida |
+| CW-020 | VERIFIED COM FIXTURES | VERIFIED COM FIXTURES | backup/restore real sintético preservado |
+| CW-021 | ACCEPTED TEMPORARILY | ACCEPTED TEMPORARILY | IPv4 loopback explícito |
+| CW-022 | PARTIAL | PARTIAL | Git íntegro/funcional; raiz e `.git` ainda têm ownership misto |

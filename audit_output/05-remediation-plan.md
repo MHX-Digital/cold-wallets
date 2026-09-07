@@ -89,3 +89,13 @@ P0: ampliar PSBT para vetores oficiais, P2PKH/P2SH-P2WPKH e validação independ
 | P1 | validar Windows x86-64 e gerar locks 3.10/3.12/3.14 | instalação clean-room e suíte completa em cada alvo |
 | P1 | validar Tor e attestation Helios em ambiente controlado | ausência comprovada de clearnet e oito evidências coerentes |
 | P2 | executar ensaio de retenção/restore em mídia sintética controlada | integridade e cleanup comprovados sem dados reais |
+
+## Pendências após C7.2
+
+| Prioridade | Validação operacional | Critério objetivo |
+|---|---|---|
+| P0 | backend secp256k1 e Bitcoin Core regtest | build/backend aprovado e transações PSBT comparadas com Core |
+| P0 | Windows offline signer | rede fisicamente separada, locks por Python e recovery comprovado |
+| P1 | Tor controlado | binário/config verificados, DNS remoto e ausência de clearnet observada |
+| P1 | Helios controlado | oito evidências de attestation, checkpoint e rota exclusiva |
+| P2 | ownership da raiz/`.git` e diretório L2 vazio | ownership operacional consistente sem alteração de conteúdo |
