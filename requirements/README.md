@@ -19,3 +19,9 @@ on the target Windows host after reviewing and installing `pip-tools` in an
 isolated build environment. Committing a generated lock requires a clean-room
 install with `--require-hashes`, backend diagnostics, and the complete test
 suite on that exact interpreter.
+
+For C8, `validation/windows/c8-python-matrix.ps1` accepts only an explicit
+Windows interpreter, three target-specific Windows locks, and a preverified
+wheelhouse. It creates a run-specific virtualenv, installs with `--no-index` and
+`--require-hashes`, rejects relevant skips, and removes only its own run root in
+`finally`. It cannot manufacture missing locks and performs no download.

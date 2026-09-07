@@ -29,8 +29,10 @@ offline signer -> signed artifact -> online validator/broadcaster
 
 ## Start the watch-only Dashboard
 
-After creating a reviewed environment, run `start.bat`. It starts only
-`dashboard/server.py` in the foreground on `127.0.0.1:8888`. It does not elevate
+After creating a reviewed virtual environment, set `COLD_WALLETS_PYTHON` to its
+absolute `python.exe` path and optionally set `COLD_WALLETS_PORT` (default
+`8888`), then run `start.bat`. The launcher rejects a global interpreter. It
+starts only `dashboard/server.py` in the foreground on IPv4 loopback. It does not elevate
 privileges, install packages, start Tor, change the firewall/network, sign, or
 broadcast.
 
@@ -57,6 +59,11 @@ python -m venv <isolated-path>
 See `requirements/README.md`. Windows CPython 3.10, 3.12, and 3.14 locks remain
 pending generation and verification on those actual targets. The launchers never
 install dependencies automatically.
+
+The C8 operational gate was not executed because the current audit host is
+native Linux, not the target Windows machine. `validation/windows/` contains a
+native-only, read-only preflight and an offline hash-locked matrix harness for
+the next controlled run. Their presence is preparation, not Windows evidence.
 
 ## Trust labels
 

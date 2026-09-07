@@ -99,3 +99,18 @@ P0: ampliar PSBT para vetores oficiais, P2PKH/P2SH-P2WPKH e validação independ
 | P1 | Tor controlado | binário/config verificados, DNS remoto e ausência de clearnet observada |
 | P1 | Helios controlado | oito evidências de attestation, checkpoint e rota exclusiva |
 | P2 | ownership da raiz/`.git` e diretório L2 vazio | ownership operacional consistente sem alteração de conteúdo |
+
+## Pendências após C8 bloqueado por plataforma
+
+| Prioridade | Execução no Windows nativo | Critério objetivo |
+|---|---|---|
+| P0 | executar preflight C8 read-only e validar locks CPython disponíveis | Windows 10/11 nativo, Git esperado, Defender ativo, locks alvo e zero resolução dinâmica |
+| P0 | Bitcoin Core exclusivamente regtest | PSBT P2WPKH interoperável, txid/fee/vsize/witness independentes e backend classificado sem promoção indevida |
+| P1 | isolamento do signer + Tor oficial verificado | nenhum socket/DNS do signer; aplicação conecta apenas ao SOCKS loopback e falha sem Tor |
+| P1 | Helios temporário e atestado | oito evidências coerentes ou estado permanece `HELIOS_UNATTESTED` |
+| P1 | launcher, filesystem, ACL e interrupções Windows | foreground, porta configurável liberada, atomicidade/ACL e cleanup em todas as falhas |
+| P2 | backup/restore em mídia sintética | autenticação, checksum, interrupção e cleanup com resíduo zero |
+
+O harness em `validation/windows/` não executa downloads nem serviços e não
+substitui nenhuma dessas evidências. A correção de ownership Linux continua uma
+tarefa separada, por caminhos explícitos.

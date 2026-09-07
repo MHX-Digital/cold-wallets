@@ -220,3 +220,34 @@ que a barreira citada possui teste; não significa que o produto está liberado.
 | CW-020 | VERIFIED COM FIXTURES | VERIFIED COM FIXTURES | backup/restore real sintético preservado |
 | CW-021 | ACCEPTED TEMPORARILY | ACCEPTED TEMPORARILY | IPv4 loopback explícito |
 | CW-022 | PARTIAL | PARTIAL | Git íntegro/funcional; raiz e `.git` ainda têm ownership misto |
+
+## Estado C8 (host inadequado)
+
+Nenhum estado ou severidade foi reduzido. O Gate C8-G0 encontrou Ubuntu Linux
+nativo, não Windows. Harnesses preparados e testes estáticos locais não são
+evidência operacional Windows.
+
+| ID | Estado C7.2 | Estado C8 | Evidência / pendência |
+|---|---|---|---|
+| CW-001 | VERIFIED | VERIFIED | fronteira de código preservada; Windows não altera esta evidência |
+| CW-002 | VERIFIED | VERIFIED | contrato local preservado; comportamento Windows não executado |
+| CW-003 | VERIFIED | VERIFIED | vetores puros preservados |
+| CW-004 | PARTIAL | PARTIAL | Bitcoin Core regtest e interoperabilidade Windows não executados |
+| CW-005 | PARTIAL | PARTIAL | matriz de confiança RPC/Helios operacional pendente |
+| CW-006 | VERIFIED | VERIFIED | nenhum instalador/downloader foi reintroduzido |
+| CW-007 | VERIFIED | VERIFIED | documentação continua distinguindo estados reais |
+| CW-008 | VERIFIED | VERIFIED | ausência de segredo no Dashboard preservada |
+| CW-009 | PARTIAL | PARTIAL | fee/vsize aguardam comparação regtest |
+| CW-010 | VERIFIED | VERIFIED | signer type 2 offline preservado; recovery Windows não executado |
+| CW-011 | VERIFIED NO FORMATO ATUAL | VERIFIED NO FORMATO ATUAL | fixtures Linux anteriores; ACL Windows pendente |
+| CW-012 | PARTIAL | PARTIAL | isolamento lógico/Windows e air gap físico não comprovados |
+| CW-013 | VERIFIED | VERIFIED | store local preservado |
+| CW-014 | VERIFIED LOCALMENTE | VERIFIED LOCALMENTE | remoto segue bloqueado; interrupções Windows pendentes |
+| CW-015 | VERIFIED NO FLUXO ALCANÇÁVEL | VERIFIED NO FLUXO ALCANÇÁVEL | nenhuma regressão estática |
+| CW-016 | PARTIAL | PARTIAL | Helios não iniciado nem atestado |
+| CW-017 | VERIFIED ESTATICAMENTE | VERIFIED ESTATICAMENTE | Tor real/fail-closed observado no Windows pendente |
+| CW-018 | VERIFIED | VERIFIED | servidor inalterado exceto porta explícita e limitada |
+| CW-019 | VERIFIED LINUX 3.12 | PARTIAL | locks/testes Windows 3.10/3.12/3.14 continuam ausentes |
+| CW-020 | VERIFIED COM FIXTURES | VERIFIED COM FIXTURES | mídia sintética Windows pendente |
+| CW-021 | ACCEPTED TEMPORARILY | ACCEPTED TEMPORARILY | IPv4 loopback explícito |
+| CW-022 | PARTIAL | PARTIAL | ownership Linux misto permanece; nenhuma alteração administrativa |
