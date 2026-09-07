@@ -1,0 +1,22 @@
+{
+  "schema": "cold-wallets.helios-attestation",
+  "version": 1,
+  "enabled": false,
+  "state": "HELIOS_UNATTESTED",
+  "chainId": 1,
+  "imageDigest": null,
+  "binarySha256": null,
+  "checkpoint": null,
+  "upstream": null,
+  "bind": "127.0.0.1",
+  "requiredEvidence": [
+    "process-or-image-identity",
+    "version-or-digest",
+    "configuration",
+    "chain-id",
+    "checkpoint",
+    "healthcheck",
+    "coherent-response",
+    "exclusive-routing"
+  ]
+}
