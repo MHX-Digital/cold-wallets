@@ -32,6 +32,16 @@ Somente após estes documentos e associadas aos findings:
 
 Não serão implementados neste ciclo PSBT, coordinator completo, migração de storage, Docker/Tor real, rede Windows ou operação blockchain.
 
+## Execução neste ciclo
+
+- CW-003 implementado e testado sem dependência externa. A implementação manual foi limitada ao **encoding/decoding de endereços**, não a assinatura ou curva elíptica; foi escolhida para evitar instalação de supply chain durante esta fase. Revisão por implementação independente continua recomendada.
+- CW-001 contido no Dashboard: endpoints com chaves falham fechados e a UI não solicita WIF/private key.
+- CW-002/CW-018 parcialmente implementados: token efêmero, allowlists exatas de Host/Origin, JSON estrito, limite de 64 KiB, rejeição de Transfer-Encoding, rotas exatas, métodos, timeout e headers.
+- CW-007/CW-016 parcialmente implementados na UI: o botão/aviso identifica o serviço iniciado pelo Dashboard como RPC público via Tor, não verificado por Helios.
+- CW-015 parcialmente implementado: erro interno HTTP genérico e log apenas do tipo da exceção.
+
+Pendências mantidas no plano: remover código legado não roteado, coordinator watch-only real, idempotência persistente, PSBT, envelope Ethereum, storage, Tor/supply chain e attestation Helios.
+
 ## Protocolo de teste aplicável
 
 Cada execução terá `run-id`, raiz sob `/tmp/cold-wallets-test-<run-id>`, manifesto de recursos próprios e ciclo `preflight → start → readiness → execute → collect → stop → cleanup → verify`. Testes puros não criarão chaves. Testes HTTP, se necessários, usarão porta efêmera e encerrarão somente o PID/thread/socket criado pela própria fixture. Resíduo permitido: zero.

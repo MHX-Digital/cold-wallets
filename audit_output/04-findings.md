@@ -36,3 +36,16 @@
 | CW-020 | MEDIUM | Backup/delete | runbook e scripts | backup incompleto/overwrite SSD | perda ou falsa exclusão | recovery testado; documentar SSD | restore em temp isolado |
 | CW-021 | LOW | IPv6 Dashboard | bind AF_INET loopback | expectativa de dual-stack não existe | compatibilidade | documentar ou listener separado seguro | socket inventory |
 | CW-022 | INFORMATIONAL | Git/runner | interferência e workflow histórico | processo externo troca checkout | evidência inválida | isolamento/lock operacional | Gate G1/G2 |
+
+## Estado após as correções isoladas deste ciclo
+
+| ID | Estado | Evidência |
+|---|---|---|
+| CW-001 | CONTIDO NO DASHBOARD | rotas que geram, abrem, preparam ou assinam com chaves retornam erro fail-closed; campos de chave removidos da UI. Código legado/CLI e funções agora não roteadas permanecem e exigem migração posterior |
+| CW-002 | PARCIALMENTE MITIGADO | Host/Origin/token/content-type/body/métodos cobertos; idempotência transacional continua pendente para o futuro coordinator/broadcaster |
+| CW-003 | MITIGADO PARA ENDEREÇOS MAINNET SUPORTADOS | Base58Check, HRP `bc`, checksum Bech32/Bech32m, mixed case, witness version/program e rede; vetores públicos BIP84/BIP350 e Base58 |
+| CW-008 | PARCIALMENTE CONTIDO | nenhuma chave real entra na UI pelas rotas expostas; helpers legados com `innerHTML` ainda devem ser removidos na refatoração watch-only |
+| CW-015 | PARCIALMENTE MITIGADO | exceções HTTP inesperadas não retornam mais `str(e)`; redactor central para todos os módulos permanece pendente |
+| CW-018 | MITIGADO NO HANDLER PRINCIPAL | somente `/` e `/index.html` servem HTML; demais rotas 404; headers de segurança e timeout de socket adicionados |
+
+Todos os demais findings permanecem abertos. “Contido” não equivale a correção arquitetural nem autoriza fundos reais.
