@@ -1,9 +1,11 @@
 """Strict watch-only API facade. It has no signer or remote broadcast dependency."""
 from __future__ import annotations
-import hashlib,json,threading
+import base64,binascii,hashlib,json,re,threading
 from broadcaster.store import BroadcastStore
 from coordinator.service import CoordinatorService,public_capabilities
 from transport.artifacts import pack,unpack
+from bitcoin_backend import diagnose
+from coordinator.bitcoin_psbt import inspect_psbt
 
 class ApiError(ValueError): pass
 
@@ -24,6 +26,18 @@ class WatchOnlyApi:
         if not isinstance(payload,dict) or set(payload)!=allowed or payload["confirmNetwork"]!="ethereum-mainnet": raise ApiError("Ethereum request schema mismatch")
         fields={name:value for name,value in payload.items() if name!="confirmNetwork"}
         return self._once(key,"create-ethereum",payload,lambda:self.service.create_ethereum(fields))
+    def review_bitcoin(self,payload,key):
+        fields={"psbtBase64","destination","maxFeeSats","maxFeeRateSatVb","confirmNetwork"}
+        if not isinstance(payload,dict) or set(payload)!=fields or payload["confirmNetwork"]!="bitcoin-mainnet": raise ApiError("Bitcoin request schema mismatch")
+        for name in ("maxFeeSats","maxFeeRateSatVb"):
+            if not isinstance(payload[name],str) or not re.fullmatch(r"[1-9][0-9]*",payload[name]): raise ApiError("invalid Bitcoin policy")
+        try: raw=base64.b64decode(payload["psbtBase64"],validate=True)
+        except (TypeError,ValueError,binascii.Error) as exc: raise ApiError("invalid PSBT encoding") from exc
+        canonical=base64.b64encode(raw).decode("ascii")
+        def perform():
+            _,summary=inspect_psbt(canonical,network="main",expected_outputs={payload["destination"]},max_fee=int(payload["maxFeeSats"]),max_fee_rate=int(payload["maxFeeRateSatVb"])); backend=diagnose()
+            return {**summary,"backend":backend.status.value,"backendType":backend.backend_type,"signingEnabled":backend.signing_enabled}
+        return self._once(key,"review-bitcoin",payload,perform)
     def get_proposal(self,proposal_id):
         envelope,state,tx_hash=self.service.proposals.get(proposal_id)
         return {"proposal":envelope,"state":state,"transactionHash":tx_hash}

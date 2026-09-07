@@ -9,7 +9,7 @@ from coordinator.api import ApiError,WatchOnlyApi
 
 DASHBOARD_DIR=Path(__file__).resolve().parent
 PORT=8888
-MAX_REQUEST_BODY=64*1024
+MAX_REQUEST_BODY=1536*1024
 REQUEST_TIMEOUT_SECONDS=5
 SESSION_TOKEN=secrets.token_urlsafe(32)
 _HTML_CACHE: bytes|None=None
@@ -33,6 +33,7 @@ def get_system_status():
 API_ROUTES={"/api/status":lambda _data:get_system_status()}
 POST_WORKFLOW_ROUTES={
     "/api/proposals/ethereum":"create_ethereum",
+    "/api/proposals/bitcoin":"review_bitcoin",
     "/api/artifacts/export":"export",
     "/api/artifacts/import":"import_signed",
     "/api/transactions/validate":"import_signed",
