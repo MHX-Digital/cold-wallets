@@ -1,0 +1,4 @@
+4a692be914062aeb58b6b4c493512408385389d31dcc5d49aba7b2e28d6e8eba  audit_output/32-c71-baseline.md
+3cb178354d903c7cbfa8315fdf9feb8e306f56f3589e4566e0622ea8900c362e  audit_output/33-c71-legacy-inventory.md
+c8b680c5d95d04da7a8870ad492786d04f9602ffb519411a342cafbd321d2ebe  audit_output/34-c71-test-evidence.md
+c068a2a20fcc691e18b7fa2b4559798ad8ea12b0b4b8eb423ec7a0be2dd7174f  audit_output/35-c71-final-report.md

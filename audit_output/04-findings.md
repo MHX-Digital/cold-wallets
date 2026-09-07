@@ -164,3 +164,32 @@ que a barreira citada possui teste; não significa que o produto está liberado.
 | CW-020 | MEDIUM | PARTIAL | backup/restore autenticado implementado; execução real da primitive pulada |
 | CW-021 | LOW | ACCEPTED TEMPORARILY | loopback IPv4 |
 | CW-022 | INFORMATIONAL | PARTIAL | conteúdo estável; ownership e buckets Git mistos persistem |
+
+## Estado C7.1
+
+`VERIFIED` continua limitado ao escopo indicado e não libera fundos reais.
+
+| ID | Estado C7 | Estado C7.1 | Evidência C7.1 |
+|---|---|---|---|
+| CW-001 | VERIFIED | VERIFIED | geradores/signers/senders legados removidos; Dashboard continua sem dependência de signer |
+| CW-002 | VERIFIED | VERIFIED | regressão HTTP completa preservada |
+| CW-003 | VERIFIED | VERIFIED | vetores de endereço preservados |
+| CW-004 | PARTIAL | PARTIAL | revisão PSBT executa; signing permanece bloqueado por backend não aprovado |
+| CW-005 | PARTIAL | PARTIAL | assinatura real confirma envelope; verdade RPC continua não atestada |
+| CW-006 | PARTIAL | PARTIAL | instaladores/downloaders Python e Windows removidos; 13 configurações RPC protegidas permanecem |
+| CW-007 | PARTIAL | PARTIAL | README atual alinhado; três documentos RPC protegidos ainda fazem promessas históricas |
+| CW-008 | VERIFIED NO DASHBOARD | VERIFIED | regressão DOM/API sem material secreto |
+| CW-009 | PARTIAL | PARTIAL | política estreita preservada; regtest pendente |
+| CW-010 | PARTIAL | VERIFIED | senders/signers Ethereum legados removidos; signer real aceita somente type 2 |
+| CW-011 | PARTIAL | VERIFIED NO FORMATO ATUAL | AES-256-GCM/scrypt real: round-trip, adulteração, senha, downgrade e atomicidade com fixtures |
+| CW-012 | PARTIAL | PARTIAL | automação de adaptadores removida; host Windows/air gap não validado |
+| CW-013 | VERIFIED | VERIFIED | store transacional e regressão preservados |
+| CW-014 | VERIFIED LOCALMENTE | VERIFIED LOCALMENTE | idempotência e estado local preservados; remoto desabilitado |
+| CW-015 | PARTIAL | VERIFIED NO FLUXO ALCANÇÁVEL | código legado com logs removido; erros/fixtures não expõem canários |
+| CW-016 | PARTIAL | PARTIAL | classificação explícita preservada; Helios não atestado e configs antigas permanecem |
+| CW-017 | PARTIAL | PARTIAL | clientes/scripts diretos removidos; configurações Docker/Tor protegidas ainda são invocáveis manualmente |
+| CW-018 | VERIFIED | VERIFIED | regressão de rotas, headers e métodos |
+| CW-019 | PARTIAL | VERIFIED LINUX 3.12 | wheelhouse hash-verificado e segunda virtualenv instalada offline; Windows pendente |
+| CW-020 | PARTIAL | VERIFIED COM FIXTURES | backup/checksum/restore autenticado real e falhas adversariais testados |
+| CW-021 | ACCEPTED TEMPORARILY | ACCEPTED TEMPORARILY | IPv4 loopback permanece explícito |
+| CW-022 | PARTIAL | PARTIAL | Git cria commits e `fsck` passa; raiz/`.git` ainda têm ownership misto |

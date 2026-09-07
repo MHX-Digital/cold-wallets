@@ -79,3 +79,13 @@ P0: ampliar PSBT para vetores oficiais, P2PKH/P2SH-P2WPKH e validação independ
 | P1 | validar API/UI no Windows e gerar locks 3.10/3.12/3.14 | clean-room installs e suíte completa por alvo |
 | P1 | validar Tor e attestation Helios controlados | nenhuma rota direta; oito evidências Helios |
 | P2 | persistir política operacional/retention de artefatos e testar restore em mídia | recuperação sem dados reais ou resíduos |
+
+## Pendências após C7.1
+
+| Prioridade | Escopo restante | Critério objetivo |
+|---|---|---|
+| P0 | corrigir ownership dos sete subdiretórios RPC listados no baseline e remover seus 13 arquivos individualmente | `rpc/` sem arquivo rastreado ou diretamente invocável; teste de filesystem passa |
+| P0 | aprovar backend secp256k1 por reprodução/auditoria independente | um estado `APPROVED_*`, vetores externos e Bitcoin Core regtest passam |
+| P1 | validar Windows x86-64 e gerar locks 3.10/3.12/3.14 | instalação clean-room e suíte completa em cada alvo |
+| P1 | validar Tor e attestation Helios em ambiente controlado | ausência comprovada de clearnet e oito evidências coerentes |
+| P2 | executar ensaio de retenção/restore em mídia sintética controlada | integridade e cleanup comprovados sem dados reais |

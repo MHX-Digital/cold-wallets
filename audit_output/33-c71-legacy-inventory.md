@@ -24,3 +24,24 @@ below have no consumers in the new Dashboard/coordinator/signer/broadcaster flow
 
 Git history preserves historical implementation. No dangerous executable is kept
 solely for archival value.
+
+## Execution result
+
+Fifty-five tracked legacy files were removed in commits `51c1fac` and `16a0f94`.
+Thirteen files remain because their seven direct parent directories were not part
+of the first ownership correction. They are enumerated by
+`test_legacy_paths_are_physically_absent`; the test fails until their specific
+directories are corrected and each file is deleted.
+
+Minimum operator command, not executed by the audit:
+
+```text
+sudo chown mhx:mhx \
+  /home/mhx/projects/cold-wallets/rpc/docs \
+  /home/mhx/projects/cold-wallets/rpc/helios \
+  /home/mhx/projects/cold-wallets/rpc/l2-templates/arbitrum \
+  /home/mhx/projects/cold-wallets/rpc/l2-templates/optimism \
+  /home/mhx/projects/cold-wallets/rpc/reverse-proxy \
+  /home/mhx/projects/cold-wallets/rpc/tor \
+  /home/mhx/projects/cold-wallets/rpc/wireguard
+```
