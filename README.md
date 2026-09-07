@@ -32,9 +32,14 @@ After creating a reviewed environment, run `start.bat`. It starts only
 privileges, install packages, start Tor, change the firewall/network, sign, or
 broadcast.
 
-The only active API is `POST /api/status`, protected by strict Host/Origin,
-an ephemeral session token, JSON/content limits, and exact routing. Unknown
-routes return 404 and unsupported methods return 405.
+The watch-only API can prepare/export Ethereum proposals, import and validate
+signed Ethereum artifacts, register them locally without remote transmission,
+track state, reserve disposable addresses, and review narrow-scope Bitcoin
+PSBTs. It cannot sign or remotely broadcast. Requests use strict Host/Origin,
+an ephemeral token, schemas/body limits, exact routes, and persistent
+idempotency records. Unknown routes return 404 and unsupported methods return
+405. Set `COLD_WALLETS_COORDINATOR_STATE` to an explicit non-wallet directory
+before launch; otherwise workflow routes fail closed with 503.
 
 ## Reproducible dependencies
 
@@ -82,5 +87,11 @@ is metadata-only/dry-run and must not be pointed at real wallet directories duri
 testing. Python managed memory cannot guarantee key zeroization, and SSD secure
 deletion is not promised. Use a physically separate offline host and validated
 backup/recovery procedures.
+
+`storage/authenticated.py` defines a versioned scrypt + AES-256-GCM format and
+`storage/backup.py` provides checksum-bound, atomic restore into an authorized
+root. They are currently approved only for synthetic fixtures. If the reviewed
+PyCryptodome backend is unavailable they fail closed; no custom cipher fallback
+exists.
 
 Detailed evidence and remaining blockers are under `audit_output/`.
