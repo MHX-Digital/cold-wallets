@@ -1,0 +1,17 @@
+{
+  "schema": "cold-wallets.legacy-quarantine",
+  "version": 1,
+  "status": "LEGACY_BLOCKED",
+  "scripts": [
+    "cold_wallets/assinar_btc.bat", "cold_wallets/assinar_eth.bat", "cold_wallets/enviar_btc.bat", "cold_wallets/enviar_eth.bat", "cold_wallets/gerar.bat", "cold_wallets/install.bat",
+    "cold_wallets/hot_disposable/run_generate_disposable.bat", "cold_wallets/hot_disposable/run_manager.bat", "cold_wallets/hot_disposable/run_sweep.bat",
+    "hardware/check_disk.ps1", "hardware/find_disks.ps1", "hardware/install_bitcoin_core.ps1", "hardware/resize_partition.ps1",
+    "rpc/fix-docker.bat", "rpc/harden-system.bat", "rpc/logs-helios.bat", "rpc/quick-test.bat", "rpc/restart-private-rpc.bat", "rpc/setup-first-time.bat", "rpc/status-private-rpc.bat", "rpc/stop-private-rpc.bat", "rpc/test-privacy.bat",
+    "rpc/hardening/disable-upnp.ps1", "rpc/hardening/windows-firewall.ps1", "rpc/scripts/backup.ps1", "rpc/scripts/generate-certs.ps1", "rpc/scripts/generate-wireguard-keys.ps1", "rpc/scripts/healthcheck.ps1", "rpc/scripts/start-all.ps1",
+    "tools/check_tor.bat", "tools/disable_system_tor.bat", "tools/enable_system_tor.bat", "tools/start_all_services.bat", "tools/start_brave_tor.bat", "tools/start_helios_rpc.bat", "tools/start_rpc_proxy.bat", "tools/status.bat", "tools/stop_all_services.bat"
+  ],
+  "legacy_python": [
+    "cold_wallets/generate_wallets.py", "cold_wallets/sign_btc.py", "cold_wallets/sign_eth.py", "cold_wallets/enviar_btc.py", "cold_wallets/enviar_eth.py", "cold_wallets/network_control.py",
+    "cold_wallets/hot_disposable/generate_disposable.py", "cold_wallets/hot_disposable/disposable_manager.py", "cold_wallets/hot_disposable/sweep_to_cold.py"
+  ]
+}

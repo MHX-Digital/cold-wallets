@@ -1,4 +1,4 @@
-import ast, unittest
+import ast,json,unittest
 from pathlib import Path
 
 def imports(path):
@@ -31,6 +31,17 @@ def reachable(start):
     return seen
 
 class ArchitectureTests(unittest.TestCase):
+    def test_legacy_quarantine_is_complete_and_unreachable(self):
+        manifest=json.loads(Path("security/legacy_quarantine.json").read_text(encoding="utf-8")); quarantined={Path(item) for item in manifest["scripts"]}
+        scripts={path for suffix in ("*.bat","*.cmd","*.ps1") for path in Path(".").rglob(suffix)}
+        allowed={Path("start.bat"),Path("requirements/generate-windows-lock.ps1")}
+        self.assertEqual(scripts-allowed,quarantined)
+        reachable_text=(Path("start.bat").read_text(encoding="utf-8")+Path("dashboard/index.html").read_text(encoding="utf-8")+Path("dashboard/server.py").read_text(encoding="utf-8")).casefold()
+        self.assertFalse(any(str(path).casefold() in reachable_text for path in quarantined))
+        dangerous=("curl","bitsadmin","invoke-webrequest","invoke-restmethod","start-bitstransfer","pip install","docker pull","runas","net session","netsh advfirewall","disable-netadapter","start-process")
+        for path in scripts:
+            text=path.read_text(encoding="utf-8",errors="replace").casefold()
+            if any(token in text for token in dangerous): self.assertIn(path,quarantined)
     def test_trust_boundaries(self):
         self.assertFalse(imports(Path("dashboard/server.py")) & {"signer","cold_wallets","requests","socket","subprocess"})
         self.assertFalse(imports(Path("signer/ethereum.py")) & {"requests","socket","urllib","dashboard","broadcaster","transport"})
