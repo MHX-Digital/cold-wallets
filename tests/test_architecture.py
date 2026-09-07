@@ -29,4 +29,26 @@ class ArchitectureTests(unittest.TestCase):
             if names & {"requests","urllib3","httpx","aiohttp"}: offenders.append(str(path))
         self.assertEqual(offenders,[])
 
+    def test_new_architecture_never_imports_or_declares_legacy_bit_package(self):
+        roots=("dashboard","coordinator","signer","broadcaster","transport")
+        offenders=[]
+        for root in roots:
+            for path in Path(root).rglob("*.py"):
+                if "bit" in imports(path): offenders.append(str(path))
+        declarations="\n".join(path.read_text(encoding="utf-8") for path in Path("requirements").glob("*.in"))
+        self.assertEqual(offenders,[])
+        self.assertNotRegex(declarations,r"(?m)^bit(?:==|$)")
+
+    def test_primary_launcher_is_unprivileged_and_foreground_only(self):
+        launcher=Path("start.bat").read_text(encoding="utf-8").casefold()
+        for forbidden in ("runas","net session","curl ","start \"cold wallets server\"","tor_manager","sign_btc","sign_eth","generate_wallets"):
+            self.assertNotIn(forbidden,launcher)
+        self.assertIn("dashboard\\server.py",launcher)
+
+    def test_replaced_network_entrypoints_fail_before_legacy_imports(self):
+        for name in ("cold_wallets/tools/fetch_tx_data.py","cold_wallets/tools/broadcast_tor.py","tools/eth_rpc_proxy.py"):
+            tree=ast.parse(Path(name).read_text(encoding="utf-8")); statements=tree.body
+            if statements and isinstance(statements[0],ast.Expr) and isinstance(statements[0].value,ast.Constant): statements=statements[1:]
+            self.assertIsInstance(statements[0],ast.Raise,name)
+
 if __name__=="__main__": unittest.main()

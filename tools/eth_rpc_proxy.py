@@ -10,6 +10,10 @@ Use no MetaMask:
 Requer Tor rodando na porta 9050 ou 9150 (Tor Browser).
 """
 
+raise SystemExit(
+    "Legacy RPC proxy is disabled. Use an explicitly classified coordinator backend."
+)
+
 import json
 import sys
 import time

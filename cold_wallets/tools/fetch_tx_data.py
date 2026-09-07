@@ -11,6 +11,10 @@ Este script busca essas informacoes via Tor e salva em arquivo
 para voce transferir para o computador offline.
 """
 
+raise SystemExit(
+    "Legacy transaction-data fetcher is disabled. Use the typed coordinator service."
+)
+
 import sys
 import json
 from decimal import Decimal

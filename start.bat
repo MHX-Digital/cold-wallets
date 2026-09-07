@@ -1,107 +1,25 @@
 @echo off
-setlocal enabledelayedexpansion
-
-:: ============================================================================
-:: AUTO-ELEVATE TO ADMIN
-:: ============================================================================
-net session >nul 2>&1
-if errorlevel 1 (
-    echo Requesting administrator privileges...
-    powershell -Command "Start-Process -FilePath '%~f0' -Verb RunAs -Wait"
-    exit /b
-)
-
+setlocal
 cd /d "%~dp0"
-title Cold Wallets Dashboard
-color 0A
 
+title Cold Wallets - Online Watch-Only Coordinator
+echo Cold Wallets online watch-only coordinator
 echo.
-echo  ============================================
-echo   COLD WALLETS - SETUP ^& LAUNCH
-echo  ============================================
+echo This launcher does not elevate privileges, install packages, start Tor,
+echo manipulate network adapters, access keys, or start signing tools.
+echo Real broadcast remains disabled pending controlled validation.
 echo.
-echo  Running as Administrator [OK]
-echo.
-
-:: ============================================================================
-:: [1] CHECK PYTHON
-:: ============================================================================
-
-echo [1/3] Checking Python...
 
 set "PYTHON=C:\Python314\python.exe"
-if not exist "%PYTHON%" (
-    where python >nul 2>&1
-    if not errorlevel 1 (
-        set "PYTHON=python"
-    ) else (
-        echo.
-        echo  [ERROR] Python not found!
-        echo  Install Python from https://www.python.org/downloads/
-        pause
-        exit /b 1
-    )
-)
+if not exist "%PYTHON%" set "PYTHON=python"
 
-for /f "tokens=*" %%v in ('"%PYTHON%" --version 2^>^&1') do echo       %%v [OK]
-
-:: ============================================================================
-:: [2] VERIFY DEPENDENCIES (never install at runtime)
-:: ============================================================================
-
-echo.
-echo [2/3] Checking dependencies...
-
-"%PYTHON%" -c "import eth_account, bit, requests, socks" >nul 2>&1
+"%PYTHON%" --version >nul 2>&1
 if errorlevel 1 (
-    echo       [ERROR] Required dependencies are missing.
-    echo       Runtime installation is disabled by security policy.
-    echo       Install only from a reviewed lockfile with verified hashes.
-    pause
+    echo [ERROR] Python was not found. Install a reviewed supported version manually.
     exit /b 1
-) else (
-    echo       All dependencies present [OK]
 )
 
-:: ============================================================================
-:: [3] START DASHBOARD (Tor handled inside dashboard, not here)
-:: ============================================================================
-
-echo.
-echo [3/3] Starting dashboard...
-echo.
-echo  ============================================
-echo   Dashboard: http://127.0.0.1:8888
-echo  ============================================
-echo.
-echo  The dashboard is an online watch-only coordinator.
-echo  It cannot manage signing keys or download Tor.
-echo.
-echo  Press Ctrl+C to stop.
-echo.
-
-:: Start server in background, wait for it, then open browser
-start "Cold Wallets Server" /min "%PYTHON%" -B dashboard\server.py 2>dashboard\server.log
-
-:: Wait for server to be ready (max 10s)
-set READY=0
-for /L %%i in (1,1,20) do (
-    if "!READY!"=="0" (
-        timeout /t 1 /nobreak >nul
-        curl -s -o nul http://127.0.0.1:8888/ >nul 2>&1
-        if not errorlevel 1 set READY=1
-    )
-)
-
-if "!READY!"=="1" (
-    echo  Server ready! Opening browser...
-    start "" "http://127.0.0.1:8888"
-) else (
-    echo  [WARN] Server may not be ready. Open http://127.0.0.1:8888 manually.
-)
-
-echo.
-echo  Dashboard running in background window.
-echo  Close the "Cold Wallets Server" window to stop.
-echo.
-pause
+echo Dashboard: http://127.0.0.1:8888
+echo Press Ctrl+C to stop the foreground process.
+"%PYTHON%" -B dashboard\server.py
+exit /b %errorlevel%

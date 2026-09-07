@@ -17,6 +17,10 @@ sudo apt install tor
 sudo systemctl start tor
 """
 
+raise SystemExit(
+    "Legacy direct broadcaster is disabled. Use the persistent broadcaster service."
+)
+
 import sys
 import json
 from datetime import datetime
