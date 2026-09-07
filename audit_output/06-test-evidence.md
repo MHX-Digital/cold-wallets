@@ -26,7 +26,8 @@ Porta efêmera: `35533`
 
 | Recurso | Antes | Criado pelo teste | Encerrado/removido | Resíduo |
 |---|---:|---:|---:|---:|
-| Processo adicional | 0 | 0 (thread no runner) | 0 | 0 |
+| Processo runner Python | 0 | 1 foreground | 1, exit 0 | 0 |
+| Subprocesso filho | 0 | 0 | 0 | 0 |
 | Thread HTTP | 0 | 1 | 1 (`shutdown`, `server_close`, `join`) | 0 |
 | Porta `35533` | livre | 1 listener loopback | 1 liberada; `ss` vazio | 0 |
 | Diretório `/tmp/cold-wallets-test-95942f6c2458436e93fd07654ca47bba-*` | 0 | 1 | 1 por `TemporaryDirectory.cleanup` | 0 |
@@ -38,6 +39,8 @@ Porta efêmera: `35533`
 | Carteiras/fixtures com segredo | 0 | 0 | 0 | 0 |
 
 O inventário `ss -ltn` antes/depois mostrou serviços preexistentes não relacionados; nenhum foi encerrado ou alterado. As portas relevantes `8888`, `9050`, `8545` e `8332` não foram ocupadas pela suíte. Docker não foi consultado nem iniciado.
+
+No `TEST_RESOURCE_SUMMARY`, `processes=0` significa zero subprocessos filhos criados pelo runner; o próprio processo Python foreground está contabilizado separadamente na tabela.
 
 ## Limitações
 
