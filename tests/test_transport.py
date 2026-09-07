@@ -1,6 +1,6 @@
 import json, os, tempfile, unittest, uuid
 from pathlib import Path
-from transport.artifacts import ArtifactError, read, write
+from transport.artifacts import ArtifactError, read, read_psbt, write, write_psbt
 from transport.tor_http import TorConfigurationError, TorHttpClient, TorPolicy, TorResponseError, TorTLSError, redact_url
 
 class Response:
@@ -33,5 +33,12 @@ class TransportTests(unittest.TestCase):
     def test_tor_rejects_redirect_and_oversize(self):
         with self.assertRaises(TorResponseError): TorHttpClient(Session(Response(302)),TorPolicy("socks5h://127.0.0.1:9050")).request("GET","https://example.invalid")
         with self.assertRaises(TorResponseError): TorHttpClient(Session(Response(content=b"xx")),TorPolicy("socks5h://127.0.0.1:9050",max_response_bytes=1)).request("GET","https://example.invalid")
+
+    def test_binary_psbt_round_trip_hash_and_tamper(self):
+        content=b"psbt\xff\x00"; path,digest=write_psbt(self.root,"proposal.psbt",content)
+        self.assertEqual(read_psbt(self.root,path.name,expected_sha256=digest),content)
+        path.write_bytes(content+b"mutated")
+        with self.assertRaises(ArtifactError): read_psbt(self.root,path.name,expected_sha256=digest)
+        with self.assertRaises(ArtifactError): write_psbt(self.root,"../escape.psbt",content)
 
 if __name__=="__main__": unittest.main()

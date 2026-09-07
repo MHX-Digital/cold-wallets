@@ -6,6 +6,7 @@ from pathlib import Path
 MAX_ARTIFACT_BYTES=1024*1024
 EXTENSIONS={"cold-wallets.eth-tx":".cw-eth-proposal","cold-wallets.eth-signed":".cw-eth-signed","cold-wallets.btc-signed":".cw-btc-signed"}
 class ArtifactError(ValueError): pass
+PSBT_MAGIC=b"psbt\xff"
 
 def _target(root: Path, name: str) -> Path:
     root=root.resolve()
@@ -59,3 +60,27 @@ def read(root: Path, name: str, *, expected_schema: str) -> dict:
     canonical=json.dumps(payload,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()
     if not secrets.compare_digest(hashlib.sha256(canonical).hexdigest(),wrapper["artifactSha256"]): raise ArtifactError("artifact hash mismatch")
     return payload
+
+def write_psbt(root: Path,name: str,content: bytes,*,overwrite: bool=False) -> tuple[Path,str]:
+    if not isinstance(content,bytes) or not content.startswith(PSBT_MAGIC) or len(content)>MAX_ARTIFACT_BYTES: raise ArtifactError("invalid PSBT artifact")
+    root=root.resolve(); root.mkdir(mode=0o700,parents=True,exist_ok=True); target=_target(root,name)
+    if target.suffix!=".psbt": raise ArtifactError("artifact extension mismatch")
+    if target.is_symlink(): raise ArtifactError("symlink target rejected")
+    if target.exists() and not overwrite: raise FileExistsError(target.name)
+    temp=root/f".cw-write-{secrets.token_hex(12)}.tmp"
+    try:
+        fd=os.open(temp,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600)
+        with os.fdopen(fd,"wb") as stream: stream.write(content); stream.flush(); os.fsync(stream.fileno())
+        if target.is_symlink(): raise ArtifactError("symlink target rejected")
+        os.replace(temp,target); return target,hashlib.sha256(content).hexdigest()
+    finally:
+        if temp.exists(): temp.unlink()
+
+def read_psbt(root: Path,name: str,*,expected_sha256: str|None=None) -> bytes:
+    target=_target(root,name)
+    if target.suffix!=".psbt" or target.is_symlink() or not target.is_file(): raise ArtifactError("regular PSBT artifact required")
+    content=target.read_bytes()
+    if not content.startswith(PSBT_MAGIC) or len(content)>MAX_ARTIFACT_BYTES: raise ArtifactError("invalid PSBT artifact")
+    digest=hashlib.sha256(content).hexdigest()
+    if expected_sha256 is not None and not secrets.compare_digest(digest,expected_sha256): raise ArtifactError("artifact hash mismatch")
+    return content
