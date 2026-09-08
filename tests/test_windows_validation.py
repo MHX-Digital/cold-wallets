@@ -60,6 +60,8 @@ class WindowsValidationHarnessTests(unittest.TestCase):
             "origin/main mismatch",
             "'status', '--porcelain=v1', '--untracked-files=all'",
             "'worktree', 'list', '--porcelain'",
+            "$worktreeentries = @(",
+            "$worktreecount = $worktreeentries.count",
             "additional git worktree rejected",
         ):
             self.assertIn(required,script)
