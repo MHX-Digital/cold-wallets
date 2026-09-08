@@ -188,7 +188,7 @@ class DashboardSecurityTests(unittest.TestCase):
 
     def test_watch_only_proposal_export_get_and_idempotency(self):
         payload={"from":"0x"+"11"*20,"to":"0x"+"22"*20,"valueWei":"3","nonce":"0","gasLimit":"21000","maxFeePerGasWei":"100","maxPriorityFeePerGasWei":"2","data":"0x","sources":[],"confirmNetwork":"ethereum-mainnet"}
-        key="test-idempotency-key-0001"; headers=self.json_headers(**{"Idempotency-Key":key})
+        idempotency_value="test-idempotency-key-0001"; headers=self.json_headers(**{"Idempotency-Key":idempotency_value})
         status,_,body=self.request("/api/proposals/ethereum",method="POST",body=json.dumps(payload).encode(),headers=headers)
         self.assertEqual(status,200); proposal=json.loads(body); proposal_id=proposal["proposalId"]
         status,_,body=self.request(f"/api/proposals/{proposal_id}",headers=self.json_headers())
