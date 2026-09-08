@@ -62,6 +62,8 @@ class WindowsValidationHarnessTests(unittest.TestCase):
             "'worktree', 'list', '--porcelain'",
             "$worktreeentries = @(",
             "$worktreecount = $worktreeentries.count",
+            "$trackedsymlinkentries = @(",
+            "$trackedsymlinkcount = $trackedsymlinkentries.count",
             "additional git worktree rejected",
         ):
             self.assertIn(required,script)

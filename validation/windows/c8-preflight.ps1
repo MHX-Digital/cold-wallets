@@ -147,7 +147,8 @@ $os = Get-CimInstance Win32_OperatingSystem
 $computer = Get-CimInstance Win32_ComputerSystem
 $principal = [Security.Principal.WindowsPrincipal]::new([Security.Principal.WindowsIdentity]::GetCurrent())
 $isAdmin = $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-$trackedSymlinkCount = ((Invoke-GitText @('ls-files', '-s')) -split "`n" | Where-Object { $_ -match '^120000 ' }).Count
+$trackedSymlinkEntries = @((Invoke-GitText @('ls-files', '-s')) -split "`n" | Where-Object { $_ -match '^120000 ' })
+$trackedSymlinkCount = $trackedSymlinkEntries.Count
 $relevantNames = @('python', 'pythonw', 'tor', 'bitcoind', 'bitcoin-qt', 'helios', 'com.docker.backend')
 $processes = @(Get-Process -ErrorAction SilentlyContinue | Where-Object { $relevantNames -contains $_.ProcessName } | ForEach-Object { [ordered]@{ name = $_.ProcessName; pid = $_.Id } })
 $relevantPorts = @(8888, 9050, 8545, 8332)
