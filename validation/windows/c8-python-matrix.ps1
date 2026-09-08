@@ -7,7 +7,7 @@ param(
     [Parameter(Mandatory=$true)][string]$PsbtLock,
     [Parameter(Mandatory=$true)][string]$Wheelhouse,
     [Parameter(Mandatory=$true)][string]$WheelhouseManifest,
-    [Parameter(Mandatory=$false)][ValidateRange(1,10000)][int]$ExpectedTestCount = 79
+    [Parameter(Mandatory=$true)][ValidateRange(1,10000)][int]$ExpectedTestCount
 )
 
 $ErrorActionPreference = 'Stop'
@@ -105,9 +105,12 @@ try {
         $testOutput = @(& $venvPython -m unittest discover -s tests -v 2>&1)
         $testOutput | ForEach-Object { Write-Host $_ }
         if ($LASTEXITCODE -ne 0) { throw 'Windows test suite failed.' }
-        $summary = ($testOutput | Select-String -Pattern '^Ran ([0-9]+) tests? in ' | Select-Object -Last 1)
-        if (-not $summary -or [int]$summary.Matches[0].Groups[1].Value -ne $ExpectedTestCount) { throw 'Unexpected Windows test count.' }
-        if (($testOutput | Out-String) -match '(?i)\bskipped\b') { throw 'Relevant skips are not accepted by C8.' }
+        $summaries = @($testOutput | Select-String -Pattern '^Ran ([0-9]+) tests? in ')
+        if ($summaries.Count -ne 1) { throw 'Missing or ambiguous Windows unittest summary.' }
+        if ([int]$summaries[0].Matches[0].Groups[1].Value -ne $ExpectedTestCount) { throw 'Unexpected Windows test count.' }
+        $combinedTestOutput = $testOutput -join "`n"
+        if ($combinedTestOutput -match '(?i)\bskipped\b') { throw 'Relevant skips are not accepted by C8.' }
+        if ($combinedTestOutput -match '(?im)^FAILED\b|(?:failures|errors)\s*=\s*[1-9]') { throw 'Windows test failures or errors are not accepted by C8.' }
     } finally { Pop-Location }
 } finally {
     foreach ($name in $environmentNames) { [Environment]::SetEnvironmentVariable($name, $previousEnvironment[$name], 'Process') }

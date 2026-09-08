@@ -58,7 +58,7 @@ if ($worktreeCount -ne 1) { throw 'Additional Git worktree rejected.' }
 
 $checksumResults = @()
 $seenChecksumPaths = @{}
-$checksumManifests = @('audit_output\50-c81-checksums.txt','audit_output\52-c82-checksums.txt')
+$checksumManifests = @('audit_output\54-c821-checksums.txt')
 foreach ($checksumManifestName in $checksumManifests) {
     $checksumManifest = Join-Path $script:RepoPath $checksumManifestName
     if (-not (Test-Path -LiteralPath $checksumManifest -PathType Leaf)) { throw 'Required checkpoint checksum manifest is missing.' }
