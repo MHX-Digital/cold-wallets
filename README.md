@@ -1,111 +1,217 @@
 # Cold Wallets
 
-Experimental Bitcoin and Ethereum coordinator/signer toolkit. **NO-GO for real
-funds.** The browser Dashboard is an online watch-only coordinator, not a cold
-wallet. Tor protects transport metadata only; it does not make an online signer
-safe or attest an RPC response.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+![Status: experimental](https://img.shields.io/badge/status-experimental-orange.svg)
 
-## Current safe boundary
+Experimental offline-first Bitcoin and Ethereum coordinator/signer toolkit with
+a watch-only Dashboard, versioned artifacts, and privacy-focused transport.
 
-```text
-online coordinator -> versioned unsigned artifact -> offline signer
-offline signer -> signed artifact -> online validator/broadcaster
-```
+> [!CAUTION]
+> **EXPERIMENTAL — NO-GO FOR REAL FUNDS.** This software has not completed
+> native Windows, Tor, Helios, or Bitcoin Core regtest validation. Do not use it
+> with a funded key, wallet, transaction, or production system.
 
-- The Dashboard cannot generate/import keys, sign, launch Tor, or broadcast.
-- Ethereum type-2 signing is implemented in a separate network-free module and
-  verified with recovery tests using a public test scalar.
-- Real broadcast is disabled. Tests use only injected fake RPC services.
-- Bitcoin is restricted to mainnet PSBT v0, native P2WPKH, SIGHASH_ALL,
-  send-all, and exactly one destination output.
-- Bitcoin signing is currently **disabled** because the native secp256k1 binary
-  shipped in `embit` has not been independently reproduced or approved.
-- P2PKH, wrapped SegWit, Taproot, multisig, PSBT v2, arbitrary scripts,
-  alternate sighashes, change outputs, and production testnet are unsupported.
-- Legacy combined key-generation/sign/send implementations and executable RPC,
-  Tor, Helios, VPN, reverse-proxy and L2 configurations were removed. The RPC
-  tree now contains only disabled, non-executable evidence contracts for future
-  operational validation.
+## Project status
 
-## Start the watch-only Dashboard
+The repository is an auditable security-architecture prototype. Local Linux
+tests validate important contracts, but they do not prove a physical air gap,
+host integrity, operational Tor routing, Ethereum consensus, or production
+Bitcoin signing. Remote broadcast is disabled and no stable release exists.
 
-After creating a reviewed virtual environment, set `COLD_WALLETS_PYTHON` to its
-absolute `python.exe` path and optionally set `COLD_WALLETS_PORT` (default
-`8888`), then run `start.bat`. The launcher rejects a global interpreter. It
-starts only `dashboard/server.py` in the foreground on IPv4 loopback. It does not elevate
-privileges, install packages, start Tor, change the firewall/network, sign, or
-broadcast.
-
-The watch-only API can prepare/export Ethereum proposals, import and validate
-signed Ethereum artifacts, register them locally without remote transmission,
-track state, reserve disposable addresses, and review narrow-scope Bitcoin
-PSBTs. It cannot sign or remotely broadcast. Requests use strict Host/Origin,
-an ephemeral token, schemas/body limits, exact routes, and persistent
-idempotency records. Unknown routes return 404 and unsupported methods return
-405. Set `COLD_WALLETS_COORDINATOR_STATE` to an explicit non-wallet directory
-before launch; otherwise workflow routes fail closed with 503.
-
-## Reproducible dependencies
-
-The verified environment is CPython 3.12 on Linux x86-64 only:
+## Architecture
 
 ```text
-python -m venv <isolated-path>
-<isolated-python> -m pip install --require-hashes -r requirements/runtime-py312-linux.lock
-<isolated-python> -m pip install --require-hashes -r requirements/build-py312.lock
-<isolated-python> -m pip install --require-hashes --no-build-isolation -r requirements/psbt-py312-linux.lock
+online watch-only coordinator
+        ↓ versioned unsigned artifact
+controlled transfer
+        ↓
+offline signer
+        ↓ signed artifact (never the key)
+controlled transfer
+        ↓
+online validator / persistent broadcaster
 ```
 
-See `requirements/README.md`. Windows CPython 3.10, 3.12, and 3.14 locks remain
-pending generation and verification on those actual targets. The launchers never
-install dependencies automatically.
+The browser Dashboard talks only to coordinator application services. It cannot
+import or generate keys, invoke a signer, start Tor, or perform remote
+broadcast. Ethereum and Bitcoin signing components are separate processes or
+modules intended for an explicitly offline host.
 
-The C8 operational gate was not executed because the current audit host is
-native Linux, not the target Windows machine. `validation/windows/` contains a
-native-only, read-only preflight and an offline hash-locked matrix harness for
-the next controlled run. Their presence is preparation, not Windows evidence.
+## Trust boundaries
 
-## Trust labels
+- **Dashboard → coordinator:** local HTTP still requires Host, Origin, ephemeral
+  token, strict schema, body limit, exact route, and idempotency checks.
+- **Coordinator → remote data:** balances, UTXOs, nonces, fees, gas, and RPC
+  responses remain potentially malicious unless independently verified.
+- **Coordinator → signer:** an unsigned artifact is untrusted input. The signer
+  recalculates policy-critical values and binds confirmation to its hash.
+- **Signer → broadcaster:** signed transactions contain no private key, but are
+  sensitive financial metadata and must not be logged casually.
+- **Application → Tor:** the central adapter is statically fail-closed; real Tor
+  routing and absence of clearnet fallback have not yet been observed on the
+  Windows target.
+- **Host and storage:** localhost, encryption at rest, and Python process
+  isolation do not protect against a compromised operating system.
 
-- `PUBLIC_RPC_UNVERIFIED`: public provider responses are trusted inputs.
-- `HELIOS_UNATTESTED`: a claimed/local Helios path lacks complete evidence.
-- `HELIOS_ATTESTED`: permitted only when process/image, version/digest,
-  configuration, chain, checkpoint, health, coherent response, and exclusive
-  routing have all been verified. An open port is insufficient.
+See [the threat model](audit_output/01-threat-model.md) and
+[architecture map](audit_output/02-architecture-map.md).
 
-No Helios or Tor service is started by the Dashboard. No flow is described as
-trustless merely because it uses Tor or localhost.
+## Implemented functionality
 
-The descriptors under `rpc/` are deliberately `UNATTESTED` and `enabled:false`.
-They do not contain a runnable image, Tor configuration, checkpoint or upstream.
+- Watch-only Dashboard and coordinator workflow API.
+- Canonical Ethereum type-2 proposal envelope and offline EIP-1559 signing.
+- Sender recovery and confirmation bound to proposal identity.
+- Versioned, size-limited artifact transport with atomic writes.
+- Persistent SQLite broadcaster state, idempotency, uncertain-result handling,
+  and fake-RPC integration tests.
+- Transactional disposable-address lifecycle without private keys in its
+  operational table.
+- Authenticated synthetic storage using versioned scrypt and AES-256-GCM.
+- Bitcoin PSBT v0 review for the narrow scope described below.
+- Central Tor-only HTTP adapter with strict TLS, redirect, timeout, retry, and
+  response-size policy.
+
+## Blocked or unsupported functionality
+
+- All real remote broadcast and any use with funds.
+- Key generation, key import, or signing in the Dashboard.
+- Bitcoin signing until the secp256k1 backend is reproducibly built and
+  independently reviewed.
+- P2PKH, P2SH-P2WPKH, Taproot, multisig, PSBT v2, change outputs, arbitrary
+  scripts, alternate sighashes, and public testnet operation.
+- Automatic downloads, runtime dependency installation, Tor/Helios startup,
+  firewall changes, network-adapter control, deploy, and service installation.
+- Claims that a public RPC is trustless or that a responding Helios port is
+  attested.
+
+## Verified platforms
+
+| Platform | Status |
+|---|---|
+| Linux x86-64, CPython 3.12 | Hash-locked local suite verified |
+| Windows 10/11, CPython 3.10 | Not tested |
+| Windows 10/11, CPython 3.12 | Not tested |
+| Windows 10/11, CPython 3.14 | Not tested |
+| macOS | Not tested |
+
+The Windows scripts under `validation/windows/` are a fail-closed handoff, not
+evidence of Windows compatibility.
+
+## Reproducible installation
+
+Only the Linux x86-64 CPython 3.12 locks are currently verified. Create a fresh
+virtualenv outside wallet directories and install exact hashes:
+
+```bash
+python3.12 -m venv /tmp/cold-wallets-reviewed-venv
+/tmp/cold-wallets-reviewed-venv/bin/python -m pip install \
+  --require-hashes -r requirements/build-py312.lock
+/tmp/cold-wallets-reviewed-venv/bin/python -m pip install \
+  --require-hashes -r requirements/runtime-py312-linux.lock
+/tmp/cold-wallets-reviewed-venv/bin/python -m pip install \
+  --no-build-isolation --require-hashes -r requirements/psbt-py312-linux.lock
+```
+
+This installation contacts the configured Python package index. For a stronger
+workflow, first populate and verify an isolated wheelhouse from the locks, then
+install into a second virtualenv using `--no-index --require-hashes`. See
+[requirements documentation](requirements/README.md). Never install
+automatically, globally, or from an unreviewed floating version.
+
+## Running the watch-only Dashboard
+
+On the target Windows host, set `COLD_WALLETS_PYTHON` to the absolute interpreter
+inside the reviewed virtualenv. Set `COLD_WALLETS_COORDINATOR_STATE` to a new,
+explicit non-wallet directory. Optionally select an unused loopback port with
+`COLD_WALLETS_PORT`, then run `start.bat` without administrator privileges.
+
+The launcher runs only `dashboard/server.py` in the foreground. It does not
+install packages, download or start Tor, modify the firewall, disable adapters,
+sign, broadcast, or start a background service. Follow the
+[Windows runbook](validation/windows/C8-RUNBOOK.md) before using the Dashboard.
 
 ## Tests
 
-Run without Python bytecode residue:
+Run the full suite without bytecode:
 
-```text
-env PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -v
+```bash
+env PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -v
 ```
 
 Cryptographic integration tests require the exact hash-locked environment.
-Tests use temporary per-run directories, ephemeral keys with no funds, fake
-RPCs, and no external blockchain or broadcast.
+Tests use public vectors, ephemeral unfunded test keys, temporary per-run roots,
+and fake RPCs. A passing suite is evidence for its named invariants only, not a
+general security certification.
 
-## Secret-storage limitations
+CI has two boundaries: the static integrity job performs no package download;
+the dependency job contacts GitHub's hosted Python/action infrastructure and the
+Python package index only to fetch artifacts constrained by committed hashes.
+It then installs and tests from a local wheelhouse with `--no-index`. CI never
+starts Tor, Helios, Bitcoin Core, Docker, or any deploy workflow.
 
-Do not place real keys in the Dashboard, repository, clipboard, logs, or test
-fixtures. Legacy plaintext wallet storage is not approved. The migration tooling
-is metadata-only/dry-run and must not be pointed at real wallet directories during
-testing. Python managed memory cannot guarantee key zeroization, and SSD secure
-deletion is not promised. Use a physically separate offline host and validated
-backup/recovery procedures.
+## Bitcoin limitations
 
-`storage/authenticated.py` defines a versioned scrypt + AES-256-GCM format and
-`storage/backup.py` provides checksum-bound, atomic restore into an authorized
-root. Round-trip, tamper, wrong-password, downgrade and synthetic restore tests
-are executed only in the hash-locked environment. This validates the format for
-fixtures; it does not approve migration of real keys. If the reviewed
-PyCryptodome backend is unavailable, storage fails closed with no custom cipher
-fallback.
+Bitcoin scope is mainnet PSBT v0, native SegWit P2WPKH, SIGHASH_ALL, send-all,
+and exactly one destination output. Review and fee-policy validation are
+implemented. Signing remains fail-closed because the observed `embit` native
+backend identity is not proof of trustworthy provenance. Bitcoin Core regtest
+interoperability and independent backend review remain pending.
 
-Detailed evidence and remaining blockers are under `audit_output/`.
+## Ethereum limitations
+
+Ethereum supports a canonical type-2 envelope, integer-only cost limits,
+explicit chain policy, calldata denial by default, sender recovery, and offline
+signing. Nonce, gas, balance, and fee inputs from a coordinator or RPC remain
+untrusted inputs requiring policy and human confirmation. No Ethereum broadcast
+or Helios attestation is enabled.
+
+## Tor and Helios limitations
+
+Tor improves transport privacy; it does not make an online signer cold, protect
+against local malware, or validate blockchain data. The adapter requires a
+configured `socks5h` proxy and has no direct fallback, but operational Windows
+capture is still pending.
+
+RPC identity is explicit:
+
+- `PUBLIC_RPC_UNVERIFIED`: provider data is trusted, not consensus-verified.
+- `HELIOS_UNATTESTED`: a Helios claim lacks complete operational evidence.
+- `HELIOS_ATTESTED`: reserved for eight independently verified process,
+  artifact, configuration, chain, checkpoint, health, response, and exclusive
+  route facts.
+
+An open port or HTTP 200 is never sufficient for `HELIOS_ATTESTED`.
+
+## Roadmap
+
+1. Validate the full matrix on native Windows without administrative changes.
+2. Verify Tor provenance, SOCKS routing, remote DNS, and fail-closed behavior.
+3. Validate PSBT interoperability with Bitcoin Core exclusively in regtest.
+4. Reproduce and independently review the Bitcoin cryptographic backend.
+5. Exercise Helios attestation or keep the path explicitly blocked.
+6. Obtain independent security review before considering any limited pilot.
+
+## Contributing and support
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md), the
+[Code of Conduct](CODE_OF_CONDUCT.md), and [SUPPORT.md](SUPPORT.md). Security
+reports must use the private process in [SECURITY.md](SECURITY.md), never a
+public issue.
+
+## License and unofficial projects
+
+The source code is distributed under the [MIT License](LICENSE). MIT permits
+third parties to use, modify, distribute, sublicense, sell, and deploy copies.
+Such forks and deployments are not official or endorsed by MHX Digital.
+
+The MIT software license does not grant rights to the “Cold Wallets” name,
+visual identity, official domains, or official hosted services as trademarks or
+indications of endorsement. The software is provided without warranty and is
+not approved for real funds.
+
+## Audit evidence
+
+The complete staged audit reports and reproducible evidence are preserved under
+[`audit_output/`](audit_output/). See [CHANGELOG.md](CHANGELOG.md) for the
+release-oriented summary. Documentation is evidence only when it matches the
+executable code and tests.

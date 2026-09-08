@@ -1,0 +1,49 @@
+name: Bug report
+description: Report a reproducible non-security defect using synthetic data.
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: "Do not report vulnerabilities or include wallet data, secrets, addresses, or real transactions. Use Private Vulnerability Reporting for security issues."
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: Full commit SHA or experimental pre-release
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options: [Dashboard, Coordinator, Signer, Broadcaster, Transport, Storage, Tests, Documentation]
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Observed behavior
+      description: Redact personal paths and use only synthetic fixtures.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: No mainnet, funded keys, real RPC, or broadcast.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety confirmation
+      options:
+        - label: I used no real funds or secrets and this is not a vulnerability report.
+          required: true
