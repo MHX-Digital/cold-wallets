@@ -1,0 +1,104 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  integrity:
+    name: Static integrity (no dependency network)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      PIP_NO_INDEX: "1"
+    steps:
+      - name: Checkout without persisted credentials
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Verify repository invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          sha256sum -c audit_output/57-c9-checksums.txt
+          test -z "$(find . -type d -name __pycache__ -print -quit)"
+          test -z "$(find . -type f \( -name '*.pyc' -o -name '*.pyo' \) -print -quit)"
+
+  test:
+    name: CPython 3.12 hash-locked suite
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout without persisted credentials
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Select CPython 3.12
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+          cache: ""
+      - name: Build verified wheelhouse and test offline
+        shell: bash
+        env:
+          EXPECTED_TEST_COUNT: "84"
+        run: |
+          set -euo pipefail
+          run_root="$(mktemp -d "${RUNNER_TEMP}/cold-wallets-ci-XXXXXXXX")"
+          run_leaf="${run_root##*/}"
+          if [[ "${run_root%/*}" != "${RUNNER_TEMP}" || ! "${run_leaf}" =~ ^cold-wallets-ci-[A-Za-z0-9]{8}$ ]]; then
+            exit 90
+          fi
+          cleanup() {
+            rc=$?
+            if [[ "${run_root%/*}" == "${RUNNER_TEMP}" && "${run_root##*/}" =~ ^cold-wallets-ci-[A-Za-z0-9]{8}$ ]]; then
+              rm -rf -- "${run_root}"
+            else
+              exit 91
+            fi
+            exit "${rc}"
+          }
+          trap cleanup EXIT INT TERM
+          prep="${run_root}/prep"
+          testenv="${run_root}/testenv"
+          wheelhouse="${run_root}/wheelhouse"
+          pip_cache="${run_root}/pip-cache"
+          output="${run_root}/unittest.log"
+          mkdir -m 700 "${wheelhouse}" "${pip_cache}"
+          python -m venv "${prep}"
+          "${prep}/bin/python" -m pip --isolated --cache-dir "${pip_cache}" download --require-hashes -r requirements/build-py312.lock -d "${wheelhouse}"
+          "${prep}/bin/python" -m pip --isolated --no-cache-dir install --no-index --require-hashes --find-links "${wheelhouse}" -r requirements/build-py312.lock
+          "${prep}/bin/python" -m pip --isolated --cache-dir "${pip_cache}" download --require-hashes -r requirements/runtime-py312-linux.lock -d "${wheelhouse}"
+          "${prep}/bin/python" -m pip --isolated --cache-dir "${pip_cache}" download --no-deps --no-build-isolation --require-hashes -r requirements/psbt-py312-linux.lock -d "${wheelhouse}"
+          python -m venv "${testenv}"
+          "${testenv}/bin/python" -m pip --isolated --no-cache-dir install --no-index --require-hashes --find-links "${wheelhouse}" -r requirements/build-py312.lock
+          "${testenv}/bin/python" -m pip --isolated --no-cache-dir install --no-index --require-hashes --find-links "${wheelhouse}" -r requirements/runtime-py312-linux.lock
+          "${testenv}/bin/python" -m pip --isolated --no-cache-dir install --no-index --no-build-isolation --require-hashes --find-links "${wheelhouse}" -r requirements/psbt-py312-linux.lock
+          env PYTHONDONTWRITEBYTECODE=1 "${testenv}/bin/python" -m unittest discover -s tests -v 2>&1 | tee "${output}"
+          "${testenv}/bin/python" - "${output}" "${EXPECTED_TEST_COUNT}" <<'PY'
+          import pathlib, re, sys
+          text = pathlib.Path(sys.argv[1]).read_text(encoding="utf-8")
+          matches = re.findall(r"(?m)^Ran ([0-9]+) tests? in ", text)
+          if matches != [sys.argv[2]]:
+              raise SystemExit("missing, ambiguous, or unexpected unittest count")
+          if (re.search(r"(?i)\bskipped\b", text)
+                  or re.search(r"(?m)^FAILED\b", text)
+                  or re.search(r"(?:failures|errors)\s*=\s*[1-9]", text)):
+              raise SystemExit("skips, failures, or errors are forbidden")
+          PY
+          test -z "$(find . -type d -name __pycache__ -print -quit)"
+          test -z "$(find . -type f \( -name '*.pyc' -o -name '*.pyo' \) -print -quit)"

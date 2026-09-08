@@ -1,0 +1,14 @@
+{
+  "schema": "cold-wallets.tor-transport-policy",
+  "version": 1,
+  "enabled": false,
+  "state": "TOR_UNATTESTED",
+  "proxy": "socks5h://127.0.0.1:9050",
+  "bind": "127.0.0.1",
+  "remoteDns": true,
+  "clearnetFallback": false,
+  "hiddenService": false,
+  "autoStart": false,
+  "binarySha256": null,
+  "configSha256": null
+}

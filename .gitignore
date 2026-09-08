@@ -28,7 +28,7 @@ venv/
 .vscode/
 .idea/
 
-# Tor runtime (downloaded automatically)
+# Prohibited legacy Tor runtime path (defensive ignore if recreated)
 tools/tor_runtime/
 
 # Dashboard server log
@@ -38,7 +38,7 @@ dashboard/server.log
 CLAUDE.md
 .claude/
 
-# RPC / Helios (private-evm-rpc integrado)
+# Defensive ignores for unsupported RPC/Helios private runtime data
 rpc/helios/config.toml
 rpc/helios/data/
 rpc/tor/hidden_service/
