@@ -112,8 +112,7 @@ $main = Resolve-GitCommit 'refs/heads/main' 'Local main is missing.'
 $originMain = Resolve-GitCommit 'refs/remotes/origin/main' 'origin/main is missing.'
 $originUrl = Invoke-GitText @('remote', 'get-url', 'origin')
 $status = Invoke-GitText @('status', '--porcelain=v1', '--untracked-files=all')
-$worktreeEntries = @((Invoke-GitText @('worktree', 'list', '--porcelain')) -split "`n" | Where-Object { $_ -like 'worktree *' })
-$worktreeCount = $worktreeEntries.Count
+$worktreeCount = ((Invoke-GitText @('worktree', 'list', '--porcelain')) -split "`n" | Where-Object { $_ -like 'worktree *' }).Count
 $expectedHeadLower = $ExpectedHead.ToLowerInvariant()
 if (-not (Test-OriginRemote $originUrl)) { throw 'origin remote mismatch.' }
 if ($branch -cne $ExpectedBranch) { throw 'Expected branch mismatch.' }
