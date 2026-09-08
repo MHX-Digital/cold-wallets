@@ -17,7 +17,7 @@ class PsbtTests(unittest.TestCase):
         _,summary=inspect_psbt(self.encoded,network="main",expected_outputs={self.destination},max_fee=1000)
         diagnostic=diagnose()
         self.assertEqual(diagnostic.backend_type,"native")
-        self.assertRegex(diagnostic.artifact_sha256 or "",r"^[0-9a-f]{64}$")
+        self.assertEqual(diagnostic.artifact_sha256,"602c643b17d7d863e801d4a4eca12711b2724698d0e2d822711fd724cf9b74c1")
         self.assertFalse(diagnostic.signing_enabled)
         secret=bytearray(self.secret)
         with self.assertRaisesRegex(PsbtError,"not approved"):

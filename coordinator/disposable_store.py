@@ -1,6 +1,5 @@
 """SQLite lifecycle for public disposable addresses; stores no private keys."""
 from __future__ import annotations
-from contextlib import closing
 import sqlite3, threading, time, uuid
 from pathlib import Path
 
@@ -15,7 +14,7 @@ class DisposableStore:
     def _init(self):
         self.path.parent.mkdir(parents=True,exist_ok=True)
         try:
-            with closing(self._db()) as db:
+            with self._db() as db:
                 db.execute("CREATE TABLE IF NOT EXISTS schema_version(version INTEGER NOT NULL CHECK(version=1))")
                 if not db.execute("SELECT 1 FROM schema_version").fetchone(): db.execute("INSERT INTO schema_version VALUES(1)")
                 db.execute("CREATE TABLE IF NOT EXISTS addresses(id TEXT PRIMARY KEY,address TEXT UNIQUE NOT NULL,protocol TEXT NOT NULL,network TEXT NOT NULL,key_reference TEXT NOT NULL,state TEXT NOT NULL,request_id TEXT UNIQUE,reserved_until INTEGER,updated_at INTEGER NOT NULL)")
@@ -24,11 +23,11 @@ class DisposableStore:
     def add(self,address,protocol,network,key_reference):
         if not key_reference or "private" in key_reference.casefold(): raise AddressStoreError("opaque key reference required")
         ident=uuid.uuid4().hex; now=int(time.time())
-        with closing(self._db()) as db: db.execute("INSERT INTO addresses VALUES(?,?,?,?,?,'UNUSED',NULL,NULL,?)",(ident,address,protocol,network,key_reference,now))
+        with self._db() as db: db.execute("INSERT INTO addresses VALUES(?,?,?,?,?,'UNUSED',NULL,NULL,?)",(ident,address,protocol,network,key_reference,now))
         return ident
     def reserve(self,request_id,ttl=300,now=None):
         now=int(time.time()) if now is None else now
-        with self._lock,closing(self._db()) as db:
+        with self._lock,self._db() as db:
             db.execute("BEGIN IMMEDIATE")
             prior=db.execute("SELECT * FROM addresses WHERE request_id=?",(request_id,)).fetchone()
             if prior: db.commit(); return prior
@@ -40,7 +39,7 @@ class DisposableStore:
     def transition(self,ident,new_state,now=None):
         if new_state not in STATES: raise AddressStoreError("unknown state")
         now=int(time.time()) if now is None else now
-        with self._lock,closing(self._db()) as db:
+        with self._lock,self._db() as db:
             db.execute("BEGIN IMMEDIATE"); row=db.execute("SELECT state FROM addresses WHERE id=?",(ident,)).fetchone()
             if not row: db.rollback(); raise AddressStoreError("unknown address")
             old=row[0]
@@ -50,12 +49,12 @@ class DisposableStore:
             db.execute("INSERT OR IGNORE INTO history(address_id,from_state,to_state,at) VALUES(?,?,?,?)",(ident,old,new_state,now)); db.commit(); return new_state
     def expire(self,now=None):
         now=int(time.time()) if now is None else now
-        with closing(self._db()) as db:
+        with self._db() as db:
             db.execute("BEGIN IMMEDIATE"); rows=db.execute("SELECT id FROM addresses WHERE state='RESERVED' AND reserved_until<=?",(now,)).fetchall()
             for (ident,) in rows:
                 db.execute("UPDATE addresses SET state='EXPIRED',updated_at=? WHERE id=?",(now,ident)); db.execute("INSERT OR IGNORE INTO history(address_id,from_state,to_state,at) VALUES(?,'RESERVED','EXPIRED',?)",(ident,now))
             db.commit(); return len(rows)
     def get(self,ident):
-        with closing(self._db()) as db: row=db.execute("SELECT id,address,protocol,network,state FROM addresses WHERE id=?",(ident,)).fetchone()
+        with self._db() as db: row=db.execute("SELECT id,address,protocol,network,state FROM addresses WHERE id=?",(ident,)).fetchone()
         if not row: raise AddressStoreError("unknown address")
         return dict(zip(("id","address","protocol","network","state"),row))

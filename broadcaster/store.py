@@ -1,6 +1,5 @@
 """SQLite-backed idempotency and explicit broadcast state machine."""
 from __future__ import annotations
-from contextlib import closing
 import hashlib, sqlite3, threading, time
 from pathlib import Path
 
@@ -24,7 +23,7 @@ class BroadcastStore:
     def _initialize(self):
         self.path.parent.mkdir(parents=True,exist_ok=True)
         try:
-            with closing(self._connect()) as db:
+            with self._connect() as db:
                 db.execute("CREATE TABLE IF NOT EXISTS schema_version(version INTEGER NOT NULL)")
                 if db.execute("SELECT COUNT(*) FROM schema_version").fetchone()[0]==0: db.execute("INSERT INTO schema_version VALUES(1)")
                 db.execute("CREATE TABLE IF NOT EXISTS operations(tx_hash TEXT PRIMARY KEY,network TEXT NOT NULL,state TEXT NOT NULL,retries INTEGER NOT NULL DEFAULT 0,updated_at INTEGER NOT NULL,protocol TEXT NOT NULL DEFAULT 'bitcoin',proposal_id TEXT NOT NULL DEFAULT '',last_error TEXT,result TEXT,uncertain INTEGER NOT NULL DEFAULT 0)")
@@ -37,7 +36,7 @@ class BroadcastStore:
     def receive(self,tx_hash: str,network: str,protocol: str,proposal_id: str):
         if not tx_hash or protocol not in {"bitcoin","ethereum"}: raise BroadcastStateError("invalid operation identity")
         now=int(time.time())
-        with self._lock,closing(self._connect()) as db:
+        with self._lock,self._connect() as db:
             db.execute("BEGIN IMMEDIATE")
             db.execute("INSERT OR IGNORE INTO operations(tx_hash,network,state,updated_at,protocol,proposal_id) VALUES(?,?,?,?,?,?)",(tx_hash,network,"RECEIVED",now,protocol,proposal_id))
             row=db.execute("SELECT tx_hash,network,state,retries,protocol,proposal_id FROM operations WHERE tx_hash=?",(tx_hash,)).fetchone()
@@ -46,7 +45,7 @@ class BroadcastStore:
         return row
     def transition(self,tx_hash: str,new_state: str,max_retries: int=3,*,last_error: str|None=None,result: str|None=None,uncertain: bool|None=None):
         if new_state not in STATES: raise BroadcastStateError("unknown state")
-        with self._lock,closing(self._connect()) as db:
+        with self._lock,self._connect() as db:
             db.execute("BEGIN IMMEDIATE")
             row=db.execute("SELECT state,retries FROM operations WHERE tx_hash=?",(tx_hash,)).fetchone()
             if not row or new_state not in TRANSITIONS[row[0]]: db.rollback(); raise BroadcastStateError("invalid transition")
@@ -56,8 +55,8 @@ class BroadcastStore:
             db.execute("UPDATE operations SET state=?,retries=?,updated_at=?,last_error=?,result=?,uncertain=? WHERE tx_hash=?",(new_state,retries,int(time.time()),last_error,result,uncertain_value,tx_hash)); db.commit()
         return new_state
     def get(self,tx_hash: str):
-        with closing(self._connect()) as db: return db.execute("SELECT tx_hash,network,state,retries FROM operations WHERE tx_hash=?",(tx_hash,)).fetchone()
+        with self._connect() as db: return db.execute("SELECT tx_hash,network,state,retries FROM operations WHERE tx_hash=?",(tx_hash,)).fetchone()
     def details(self,tx_hash: str):
-        with closing(self._connect()) as db:
+        with self._connect() as db:
             row=db.execute("SELECT tx_hash,network,state,retries,protocol,proposal_id,last_error,result,uncertain FROM operations WHERE tx_hash=?",(tx_hash,)).fetchone()
         return row
