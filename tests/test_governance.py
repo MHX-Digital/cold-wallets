@@ -6,7 +6,7 @@ from pathlib import Path
 class GovernanceTests(unittest.TestCase):
     def test_open_source_governance_and_ci_are_fail_closed(self):
         required = (
-            "LICENSE", "SECURITY.md", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md",
+            "LICENSE", "SECURITY.md", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md", ".gitleaksignore",
             "SUPPORT.md", "CHANGELOG.md", ".github/CODEOWNERS",
             ".github/PULL_REQUEST_TEMPLATE.md", ".github/dependabot.yml",
             ".github/ISSUE_TEMPLATE/bug_report.yml",
@@ -17,6 +17,8 @@ class GovernanceTests(unittest.TestCase):
         license_text = Path("LICENSE").read_text(encoding="utf-8")
         self.assertIn("MIT License", license_text)
         self.assertIn("Copyright (c) 2026 MHX Digital", license_text)
+        ignores = [line for line in Path(".gitleaksignore").read_text(encoding="utf-8").splitlines() if line and not line.startswith("#")]
+        self.assertEqual(ignores, ["ddabbb1063c4deb986d79288ca4db7201dcf5331:tests/test_dashboard_security.py:generic-api-key:191"])
         owners = Path(".github/CODEOWNERS").read_text(encoding="utf-8")
         for scope in ("*", "/signer/", "/coordinator/", "/broadcaster/", "/storage/", "/transport/", "/requirements/", "/validation/", "/.github/workflows/", "/SECURITY.md", "/LICENSE"):
             self.assertRegex(owners, rf"(?m)^{re.escape(scope)}\s+@neomaike$")
