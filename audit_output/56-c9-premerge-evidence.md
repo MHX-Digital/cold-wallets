@@ -65,6 +65,23 @@ The suite resource record used run ID
 process, container, network, volume, or file residue. Host listener inventory
 was 35 before and after; preexisting listeners were not touched.
 
+### CI portability correction
+
+The first remote run (`34189615502`) exposed a Linux timing difference in the
+oversized-request test: `urllib` attempted to continue writing a body after the
+server had correctly rejected its declared `Content-Length`, producing a local
+`BrokenPipeError`. The test now sends only the oversized header declaration and
+proves that the server responds `413` without reading or allocating the body.
+The CI log validator was also corrected to use three valid, independent regular
+expressions for skips, failures, and errors.
+
+The post-correction authoritative local run ID was
+`cold-wallets-c9-ci-fix2-OEqnTMbe`. It rebuilt two temporary virtualenvs and a
+32-file hash-constrained wheelhouse, then passed **84/84 tests with zero skips,
+failures, or errors** in 3.694 seconds. Its test-resource run ID was
+`fd143dfc2f254d9e8f418ec23ff15b1b`, using ephemeral port `39245`; host listener
+counts were 35 before and after and all cycle resources were removed.
+
 ## Secret review
 
 Gitleaks 8.30.1 was downloaded from its official GitHub release into an

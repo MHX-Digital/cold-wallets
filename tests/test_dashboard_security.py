@@ -1,5 +1,6 @@
 import json
 import ast
+import http.client
 import tempfile
 import threading
 import time
@@ -134,11 +135,20 @@ class DashboardSecurityTests(unittest.TestCase):
                 "X-Session-Token": dashboard.SESSION_TOKEN,
             })
         self.assertEqual(status, 415)
-        oversized = b" " * (dashboard.MAX_REQUEST_BODY + 1)
-        status, _, _ = self.request(
-            "/api/status", method="POST", body=oversized,
-            headers=self.json_headers())
-        self.assertEqual(status, 413)
+        # Send only the oversized declaration.  The server must reject from the
+        # headers without waiting for, allocating, or reading the claimed body.
+        connection = http.client.HTTPConnection("127.0.0.1", self.port, timeout=3)
+        try:
+            connection.putrequest("POST", "/api/status")
+            for name, value in self.json_headers().items():
+                connection.putheader(name, value)
+            connection.putheader("Content-Length", dashboard.MAX_REQUEST_BODY + 1)
+            connection.endheaders()
+            response = connection.getresponse()
+            self.assertEqual(response.status, 413)
+            response.read()
+        finally:
+            connection.close()
 
     def test_private_key_routes_fail_closed(self):
         payload = json.dumps({"wif": "test-sentinel-not-a-key"}).encode()

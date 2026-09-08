@@ -95,7 +95,9 @@ jobs:
           matches = re.findall(r"(?m)^Ran ([0-9]+) tests? in ", text)
           if matches != [sys.argv[2]]:
               raise SystemExit("missing, ambiguous, or unexpected unittest count")
-          if re.search(r"(?i)\bskipped\b|(?m)^FAILED\b|(?:failures|errors)\s*=\s*[1-9]", text):
+          if (re.search(r"(?i)\bskipped\b", text)
+                  or re.search(r"(?m)^FAILED\b", text)
+                  or re.search(r"(?:failures|errors)\s*=\s*[1-9]", text)):
               raise SystemExit("skips, failures, or errors are forbidden")
           PY
           test -z "$(find . -type d -name __pycache__ -print -quit)"
