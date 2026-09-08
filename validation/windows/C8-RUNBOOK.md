@@ -45,7 +45,7 @@ installs a service, starts Tor/Helios/Bitcoin Core, or uses a blockchain network
      -PsbtLock '.\requirements\psbt-py310-windows-amd64.lock' `
      -Wheelhouse 'C:\ColdWallets-C8\wheelhouse-py310' `
      -WheelhouseManifest '.\requirements\wheelhouse-py310-windows-amd64.json' `
-     -ExpectedTestCount 83
+     -ExpectedTestCount 84
    ```
 
    CPython 3.12 / Windows AMD64:
@@ -60,7 +60,7 @@ installs a service, starts Tor/Helios/Bitcoin Core, or uses a blockchain network
      -PsbtLock '.\requirements\psbt-py312-windows-amd64.lock' `
      -Wheelhouse 'C:\ColdWallets-C8\wheelhouse-py312' `
      -WheelhouseManifest '.\requirements\wheelhouse-py312-windows-amd64.json' `
-     -ExpectedTestCount 83
+     -ExpectedTestCount 84
    ```
 
    CPython 3.14 / Windows AMD64:
@@ -75,11 +75,11 @@ installs a service, starts Tor/Helios/Bitcoin Core, or uses a blockchain network
      -PsbtLock '.\requirements\psbt-py314-windows-amd64.lock' `
      -Wheelhouse 'C:\ColdWallets-C8\wheelhouse-py314' `
      -WheelhouseManifest '.\requirements\wheelhouse-py314-windows-amd64.json' `
-     -ExpectedTestCount 83
+     -ExpectedTestCount 84
    ```
 
    The harness rejects a missing or ambiguous `Ran N tests` conclusion, a count
-   other than 83, and any skip, failure, or error. It installs only into its
+   other than 84, and any skip, failure, or error. It installs only into its
    unique temporary virtualenv with `--isolated --no-index --require-hashes`,
    restores every modified process environment variable, and removes only its
    validated `cold-wallets-c8-<run-id>` directory in `finally`.

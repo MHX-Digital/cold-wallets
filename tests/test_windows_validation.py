@@ -34,9 +34,8 @@ class WindowsValidationHarnessTests(unittest.TestCase):
         self.assertRegex(script,r"\[parameter\(mandatory=\$true\)\].*\$expectedhead")
         self.assertIn("$expectedmain = '5374c1c0ac17aed4fe6e56582ec3c517f4fcfb9f'",script)
         self.assertIn("$expectedbranch = 'audit/cold-wallet-security-architecture-20260907'",script)
-        self.assertIn("audit_output\\54-c821-checksums.txt",script)
-        self.assertNotIn("$checksumManifests = @('audit_output\\50-c81-checksums.txt'",script)
-        self.assertNotIn("$checksumManifests = @('audit_output\\52-c82-checksums.txt'",script)
+        self.assertIn("audit_output\\57-c9-checksums.txt",script)
+        self.assertNotIn("$checksumManifests = @('audit_output\\54-c821-checksums.txt'",script)
         self.assertNotIn("audit_output\\41-c72-checksums.txt",script)
         self.assertNotIn("5fdb89b362641931a67e41dc6a78d3c573d6edb1",script)
         for condition in ("audit branch mismatch","head mismatch","main/base mismatch","worktree must be clean","additional git worktree rejected","checkpoint checksum mismatch"):
@@ -84,7 +83,7 @@ class WindowsValidationHarnessTests(unittest.TestCase):
         self.assertIn("-ExpectedHead '<HEAD FINAL PUBLICADO>'",runbook)
         self.assertIn("-ExpectedMain '5374c1c0ac17aed4fe6e56582ec3c517f4fcfb9f'",runbook)
         self.assertIn("manifest 54 authenticates the immutable historical manifests 50 and 52",runbook.casefold())
-        self.assertEqual(runbook.count("-ExpectedTestCount 83"),3)
+        self.assertEqual(runbook.count("-ExpectedTestCount 84"),3)
         for parameter in ("-PythonExecutable","-PythonVersion","-RuntimeLock","-BuildLock","-PsbtLock","-Wheelhouse","-WheelhouseManifest"):
             self.assertEqual(len(re.findall(rf"(?m)^\s+{re.escape(parameter)}(?:\s|$)",runbook)),3)
 
