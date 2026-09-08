@@ -34,9 +34,8 @@ by this correction.
   `refs/remotes/origin/main` to equal the supplied SHA.
 - The preflight does not fetch, pull, clone, reset, clean, deploy, or call web
   endpoints. The operator must fetch references before running it.
-- Worktree and tracked-symlink inventories are coerced to arrays before
-  counting, so a valid single-entry inventory does not become a PowerShell
-  scalar without `.Count`.
+- The worktree inventory is coerced to an array before counting, so a valid
+  single-worktree clone does not become a PowerShell scalar without `.Count`.
 - The preflight validates only manifest 59 as the operational checksum manifest.
   Manifest 57 is historical evidence authenticated by manifest 59.
 - `.github/workflows/ci.yml` validates
