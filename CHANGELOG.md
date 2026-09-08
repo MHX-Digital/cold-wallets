@@ -6,6 +6,10 @@ to use semantic versioning after a stable API exists.
 
 ## [Unreleased]
 
+No changes yet.
+
+## [0.1.0-alpha.1] - 2026-09-08
+
 ### Added
 
 - Open source governance, vulnerability reporting guidance, CODEOWNERS, issue
