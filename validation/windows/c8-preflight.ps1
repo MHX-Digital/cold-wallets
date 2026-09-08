@@ -1,12 +1,17 @@
 param(
     [Parameter(Mandatory=$true)][ValidatePattern('^[0-9a-fA-F]{40}$')][string]$ExpectedHead,
-    [Parameter(Mandatory=$false)][ValidatePattern('^[0-9a-fA-F]{40}$')][string]$ExpectedMain = '5374c1c0ac17aed4fe6e56582ec3c517f4fcfb9f',
+    [Parameter(Mandatory=$false)][ValidateNotNullOrEmpty()][string]$ExpectedBranch = 'main',
     [Parameter(Mandatory=$false)][string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 )
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
-$ExpectedBranch = 'audit/cold-wallet-security-architecture-20260907'
+$ExpectedRepositoryUrl = 'https://github.com/MHX-Digital/cold-wallets.git'
+$EquivalentSshRepositoryUrls = @(
+    'git@github.com:MHX-Digital/cold-wallets.git',
+    'ssh://git@github.com/MHX-Digital/cold-wallets.git'
+)
+$OperationalChecksumManifest = 'audit_output\59-c91-checksums.txt'
 
 if (-not [System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform(
     [System.Runtime.InteropServices.OSPlatform]::Windows)) {
@@ -27,6 +32,57 @@ function Invoke-GitText([string[]]$Arguments) {
     return (($text | Out-String).Trim())
 }
 
+function Resolve-GitCommit([string]$Ref, [string]$FailureMessage) {
+    try {
+        return Invoke-GitText @('rev-parse', '--verify', "$Ref^{commit}")
+    } catch {
+        throw $FailureMessage
+    }
+}
+
+function Test-OriginRemote([string]$Url) {
+    if ($Url -ceq $ExpectedRepositoryUrl) { return $true }
+    return ($EquivalentSshRepositoryUrls -contains $Url)
+}
+
+function ConvertTo-ProcessArgument([string]$Value) {
+    if ($Value -notmatch '[\s"]') { return $Value }
+    return '"' + ($Value -replace '\\', '\\' -replace '"', '\"') + '"'
+}
+
+function Get-GitBlobSha256([string]$RepositoryPath) {
+    if ($RepositoryPath -match "[`r`n]") { throw 'Checksum path contained a newline.' }
+
+    $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
+    $startInfo.FileName = 'git'
+    $startInfo.UseShellExecute = $false
+    $startInfo.RedirectStandardOutput = $true
+    $startInfo.RedirectStandardError = $true
+    $arguments = @('-C', $script:RepoPath, 'cat-file', 'blob', "HEAD:$RepositoryPath")
+    $argumentListProperty = $startInfo.GetType().GetProperty('ArgumentList')
+    if ($argumentListProperty) {
+        foreach ($argument in $arguments) { [void]$startInfo.ArgumentList.Add($argument) }
+    } else {
+        $startInfo.Arguments = (($arguments | ForEach-Object { ConvertTo-ProcessArgument $_ }) -join ' ')
+    }
+
+    $process = [System.Diagnostics.Process]::Start($startInfo)
+    try {
+        $sha = [System.Security.Cryptography.SHA256]::Create()
+        try {
+            $digest = $sha.ComputeHash($process.StandardOutput.BaseStream)
+        } finally {
+            $sha.Dispose()
+        }
+        $stderr = $process.StandardError.ReadToEnd()
+        $process.WaitForExit()
+        if ($process.ExitCode -ne 0) { throw "Git blob checksum failed: $stderr" }
+        return ([System.BitConverter]::ToString($digest).Replace('-', '').ToLowerInvariant())
+    } finally {
+        $process.Dispose()
+    }
+}
+
 function Get-ConfinedManifestFile([string]$Root, [string]$RelativePath) {
     if ([System.IO.Path]::IsPathRooted($RelativePath)) { throw 'Absolute checksum path rejected.' }
     $rootPrefix = $Root.TrimEnd('\') + '\'
@@ -45,31 +101,42 @@ $script:RepoPath = [System.IO.Path]::GetFullPath($RepoRoot)
 if (-not (Test-Path -LiteralPath (Join-Path $script:RepoPath '.git') -PathType Container)) { throw 'RepoRoot is not the Cold Wallets checkout.' }
 if ((Get-Item -LiteralPath $script:RepoPath -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) { throw 'Reparse-point RepoRoot rejected.' }
 
-$branch = Invoke-GitText @('branch', '--show-current')
-$head = Invoke-GitText @('rev-parse', 'HEAD')
-$main = Invoke-GitText @('rev-parse', 'main')
+try {
+    $branch = Invoke-GitText @('symbolic-ref', '--quiet', '--short', 'HEAD')
+} catch {
+    throw 'Detached HEAD rejected.'
+}
+if ([string]::IsNullOrWhiteSpace($branch)) { throw 'Detached HEAD rejected.' }
+$head = Resolve-GitCommit 'HEAD' 'HEAD is missing.'
+$main = Resolve-GitCommit 'refs/heads/main' 'Local main is missing.'
+$originMain = Resolve-GitCommit 'refs/remotes/origin/main' 'origin/main is missing.'
+$originUrl = Invoke-GitText @('remote', 'get-url', 'origin')
 $status = Invoke-GitText @('status', '--porcelain=v1', '--untracked-files=all')
 $worktreeCount = ((Invoke-GitText @('worktree', 'list', '--porcelain')) -split "`n" | Where-Object { $_ -like 'worktree *' }).Count
-if ($branch -cne $ExpectedBranch) { throw 'Audit branch mismatch.' }
+$expectedHeadLower = $ExpectedHead.ToLowerInvariant()
+if (-not (Test-OriginRemote $originUrl)) { throw 'origin remote mismatch.' }
+if ($branch -cne $ExpectedBranch) { throw 'Expected branch mismatch.' }
 if ($head -cne $ExpectedHead.ToLowerInvariant()) { throw 'HEAD mismatch.' }
-if ($main -cne $ExpectedMain.ToLowerInvariant()) { throw 'main/base mismatch.' }
+if ($main -cne $expectedHeadLower) { throw 'Local main mismatch.' }
+if ($originMain -cne $expectedHeadLower) { throw 'origin/main mismatch.' }
 if (-not [string]::IsNullOrWhiteSpace($status)) { throw 'Worktree must be clean.' }
 if ($worktreeCount -ne 1) { throw 'Additional Git worktree rejected.' }
 
 $checksumResults = @()
 $seenChecksumPaths = @{}
-$checksumManifests = @('audit_output\57-c9-checksums.txt')
+$checksumManifests = @($OperationalChecksumManifest)
 foreach ($checksumManifestName in $checksumManifests) {
     $checksumManifest = Join-Path $script:RepoPath $checksumManifestName
-    if (-not (Test-Path -LiteralPath $checksumManifest -PathType Leaf)) { throw 'Required checkpoint checksum manifest is missing.' }
+    if (-not (Test-Path -LiteralPath $checksumManifest -PathType Leaf)) { throw 'Required operational checksum manifest is missing.' }
     foreach ($line in Get-Content -LiteralPath $checksumManifest -Encoding UTF8) {
-        if ($line -notmatch '^([0-9a-f]{64})\s+(.+)$') { throw 'Malformed checkpoint checksum manifest.' }
+        if ($line -notmatch '^([0-9a-f]{64})\s+(.+)$') { throw 'Malformed operational checksum manifest.' }
         $expected = $Matches[1]; $manifestPath = $Matches[2]
         if ($seenChecksumPaths.ContainsKey($manifestPath)) { throw 'Duplicate checksum path rejected.' }
         $seenChecksumPaths[$manifestPath] = $true
         $target = Get-ConfinedManifestFile $script:RepoPath $manifestPath.Replace('/', [System.IO.Path]::DirectorySeparatorChar)
-        $actual = (Get-FileHash -LiteralPath $target -Algorithm SHA256).Hash.ToLowerInvariant()
-        if ($actual -cne $expected) { throw 'Checkpoint checksum mismatch.' }
+        $repositoryPath = $manifestPath.Replace('\', '/')
+        $actual = Get-GitBlobSha256 $repositoryPath
+        if ($actual -cne $expected) { throw 'Operational checksum mismatch.' }
         $checksumResults += [ordered]@{ file = $manifestPath; matches = $true }
     }
 }
@@ -100,10 +167,10 @@ if ((Get-Command docker -ErrorAction SilentlyContinue) -and (Get-Process -Name '
 $acl = Get-Acl -LiteralPath $script:RepoPath
 
 $result = [ordered]@{
-    schema = 'cold-wallets.c8-windows-preflight'; version = 2
+    schema = 'cold-wallets.c8-windows-preflight'; version = 3
     runId = "cold-wallets-c8-$([Guid]::NewGuid().ToString('N'))"; timestampUtc = [DateTime]::UtcNow.ToString('o'); nativeWindows = $true
     host = [ordered]@{ productName = $os.Caption; version = $os.Version; build = $os.BuildNumber; architecture = $os.OSArchitecture; machineIdMasked = Get-MaskedIdentifier $env:COMPUTERNAME; userIdMasked = Get-MaskedIdentifier ([Security.Principal.WindowsIdentity]::GetCurrent().Name); administrator = $isAdmin; powershell = $PSVersionTable.PSVersion.ToString(); domainRole = $computer.DomainRole }
-    repository = [ordered]@{ branch = $branch; head = $head; main = $main; clean = $true; worktreeCount = $worktreeCount; trackedSymlinkCount = $trackedSymlinkCount; ownerMasked = Get-MaskedIdentifier $acl.Owner; readOnlyAttributeSet = [bool]((Get-Item -LiteralPath $script:RepoPath).Attributes -band [IO.FileAttributes]::ReadOnly); aclRuleCount = @($acl.Access).Count; explicitDenyRuleCount = @($acl.Access | Where-Object AccessControlType -eq 'Deny').Count; c81Checksums = $checksumResults }
+    repository = [ordered]@{ branch = $branch; expectedBranch = $ExpectedBranch; head = $head; main = $main; originMain = $originMain; origin = $originUrl; clean = $true; worktreeCount = $worktreeCount; trackedSymlinkCount = $trackedSymlinkCount; ownerMasked = Get-MaskedIdentifier $acl.Owner; readOnlyAttributeSet = [bool]((Get-Item -LiteralPath $script:RepoPath).Attributes -band [IO.FileAttributes]::ReadOnly); aclRuleCount = @($acl.Access).Count; explicitDenyRuleCount = @($acl.Access | Where-Object AccessControlType -eq 'Deny').Count; operationalChecksumManifest = $OperationalChecksumManifest.Replace('\', '/'); historicalChecksumManifests = @('audit_output/57-c9-checksums.txt'); c91Checksums = $checksumResults }
     tools = [ordered]@{ git = [bool](Get-Command git -ErrorAction SilentlyContinue); pythonLauncher = [bool](Get-Command py -ErrorAction SilentlyContinue); pythonVersions = $pythonVersions; docker = [bool](Get-Command docker -ErrorAction SilentlyContinue); bitcoinCore = [bool](Get-Command bitcoind -ErrorAction SilentlyContinue); tor = [bool](Get-Command tor -ErrorAction SilentlyContinue) }
     defender = [ordered]@{ available = [bool]$defender; antivirusEnabled = if ($defender) { [bool]$defender.AntivirusEnabled } else { $null }; realtimeProtectionEnabled = if ($defender) { [bool]$defender.RealTimeProtectionEnabled } else { $null } }
     adapters = $adapters; listeners = $listeners; relevantProcesses = $processes; dockerContainerCount = $dockerContainers; volumes = $volumes

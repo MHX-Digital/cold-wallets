@@ -34,7 +34,7 @@ jobs:
         run: |
           set -euo pipefail
           git diff --check
-          sha256sum -c audit_output/57-c9-checksums.txt
+          sha256sum -c audit_output/59-c91-checksums.txt
           test -z "$(find . -type d -name __pycache__ -print -quit)"
           test -z "$(find . -type f \( -name '*.pyc' -o -name '*.pyo' \) -print -quit)"
 
@@ -55,7 +55,7 @@ jobs:
       - name: Build verified wheelhouse and test offline
         shell: bash
         env:
-          EXPECTED_TEST_COUNT: "84"
+          EXPECTED_TEST_COUNT: "89"
         run: |
           set -euo pipefail
           run_root="$(mktemp -d "${RUNNER_TEMP}/cold-wallets-ci-XXXXXXXX")"

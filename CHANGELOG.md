@@ -6,7 +6,14 @@ to use semantic versioning after a stable API exists.
 
 ## [Unreleased]
 
-No changes yet.
+### Fixed
+
+- Corrected the native Windows handoff after the C9 squash merge so preflight
+  validation targets `main`, uses the post-merge SHA supplied by the operator,
+  and treats checksum manifest 57 as historical evidence authenticated by the
+  new operational manifest 59.
+- Closed short-lived SQLite connections explicitly so Windows test cleanup can
+  remove run-owned temporary database files.
 
 ## [0.1.0-alpha.1] - 2026-09-08
 
